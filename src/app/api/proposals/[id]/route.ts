@@ -18,7 +18,7 @@ function getUserFromToken(request: NextRequest) {
 // Aceitar ou recusar proposta
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = getUserFromToken(request)
@@ -27,7 +27,7 @@ export async function PUT(
     }
 
     const { action } = await request.json() // 'accept' ou 'reject'
-    const proposalId = params.id
+    const { id: proposalId } = await params
 
     const clientProfile = await prisma.clientProfile.findUnique({
       where: { userId: user.userId }
