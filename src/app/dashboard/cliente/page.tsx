@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChefHat, Plus, Calendar, DollarSign, Star, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { ChefHat, Plus, Calendar, DollarSign, Star, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -84,8 +85,8 @@ export default function DashboardClientePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">Carregando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
       </div>
     );
   }
@@ -175,21 +176,34 @@ export default function DashboardClientePage() {
                       </div>
 
                       {event.hiredProposal ? (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                          <p className="text-sm text-green-800">
-                            <strong>Profissional contratado:</strong> {event.hiredProposal.professional?.user?.name}
-                          </p>
+                        <div className="space-y-3">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-sm text-green-800">
+                              <strong>Profissional contratado:</strong> {event.hiredProposal.professional?.user?.name}
+                            </p>
+                          </div>
+                          {event.status === 'COMPLETED' && (
+                            <Link href={`/avaliar?evento=${event.id}&profissional=${event.hiredProposal.professional?.id}`}>
+                              <Button 
+                                size="sm" 
+                                className="bg-gradient-to-r from-amber-500 to-orange-600 text-white"
+                              >
+                                <Star className="w-4 h-4 mr-2" />
+                                Avaliar Profissional
+                              </Button>
+                            </Link>
+                          )}
                         </div>
                       ) : event.proposals.length > 0 ? (
-                        <div className="flex gap-2">
+                        <Link href={`/evento/${event.id}/propostas`}>
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => router.push(`/evento/${event.id}/propostas`)}
+                            className="border-amber-200 text-amber-700 hover:bg-amber-50"
                           >
                             Ver {event.proposals.length} orçamento{event.proposals.length !== 1 ? 's' : ''}
                           </Button>
-                        </div>
+                        </Link>
                       ) : (
                         <p className="text-sm text-gray-500">Aguardando orçamentos...</p>
                       )}

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ChefHat, 
@@ -24,8 +24,13 @@ interface CriterioAvaliacao {
 
 export default function AvaliarProfissionalPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventoId = searchParams.get('evento');
+  const profissionalId = searchParams.get('profissional');
+  
   const [loading, setLoading] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [profissional, setProfissional] = useState<any>(null);
   
   const [criterios, setCriterios] = useState<CriterioAvaliacao[]>([
     { id: 'foodQuality', label: 'Qualidade da comida', nota: 0 },
@@ -38,13 +43,20 @@ export default function AvaliarProfissionalPage() {
   const [comentario, setComentario] = useState('');
   const [notaGeral, setNotaGeral] = useState(0);
 
+  useEffect(() => {
+    if (!eventoId || !profissionalId) {
+      router.push('/dashboard/cliente');
+      return;
+    }
+    // Aqui poderia buscar dados do profissional
+  }, [eventoId, profissionalId, router]);
+
   const handleNotaChange = (criterioId: string, nota: number) => {
     const novosCriterios = criterios.map(c => 
       c.id === criterioId ? { ...c, nota } : c
     );
     setCriterios(novosCriterios);
     
-    // Calcular nota geral automaticamente
     const notasPreenchidas = novosCriterios.filter(c => c.nota > 0);
     if (notasPreenchidas.length > 0) {
       const media = notasPreenchidas.reduce((acc, c) => acc + c.nota, 0) / notasPreenchidas.length;
@@ -54,7 +66,7 @@ export default function AvaliarProfissionalPage() {
 
   const handleEnviar = async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (!token || !profissionalId || !eventoId) {
       router.push('/login');
       return;
     }
@@ -62,6 +74,8 @@ export default function AvaliarProfissionalPage() {
     setLoading(true);
     try {
       const dadosAvaliacao = {
+        professionalId: profissionalId,
+        eventId: eventoId,
         foodQuality: criterios.find(c => c.id === 'foodQuality')?.nota,
         serviceQuality: criterios.find(c => c.id === 'serviceQuality')?.nota,
         punctuality: criterios.find(c => c.id === 'punctuality')?.nota,
