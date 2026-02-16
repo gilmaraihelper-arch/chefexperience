@@ -38,6 +38,10 @@ interface Proposta {
   message: string;
   sentAt: string;
   status: string;
+  event?: {
+    id: string;
+  };
+  eventId?: string;
 }
 
 interface Evento {
@@ -340,7 +344,7 @@ export default function VerPropostasPage() {
                               </span>
                               {proposta.pricePerPerson && (
                                 <span className="text-sm text-gray-500 ml-2">
-                                  (R$ {proposta.pricePorPessoa}/pessoa)
+                                  (R$ {proposta.pricePerPerson}/pessoa)
                                 </span>
                               )}
                             </div>

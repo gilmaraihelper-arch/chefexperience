@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -22,7 +22,7 @@ interface CriterioAvaliacao {
   nota: number;
 }
 
-export default function AvaliarProfissionalPage() {
+function AvaliarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventoId = searchParams.get('evento');
@@ -30,7 +30,6 @@ export default function AvaliarProfissionalPage() {
   
   const [loading, setLoading] = useState(false);
   const [enviado, setEnviado] = useState(false);
-  const [profissional, setProfissional] = useState<any>(null);
   
   const [criterios, setCriterios] = useState<CriterioAvaliacao[]>([
     { id: 'foodQuality', label: 'Qualidade da comida', nota: 0 },
@@ -48,7 +47,6 @@ export default function AvaliarProfissionalPage() {
       router.push('/dashboard/cliente');
       return;
     }
-    // Aqui poderia buscar dados do profissional
   }, [eventoId, profissionalId, router]);
 
   const handleNotaChange = (criterioId: string, nota: number) => {
@@ -232,5 +230,13 @@ export default function AvaliarProfissionalPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+export default function AvaliarProfissionalPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-600" /></div>}>
+      <AvaliarContent />
+    </Suspense>
   );
 }
