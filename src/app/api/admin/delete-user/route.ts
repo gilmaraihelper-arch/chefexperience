@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Deletar contas relacionadas (OAuth)
-    await prisma.account.deleteMany({
+    await (prisma as any).account.deleteMany({
       where: { userId: user.id },
     });
 
