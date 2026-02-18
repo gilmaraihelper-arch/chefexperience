@@ -14,6 +14,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
     error: "/login",
+    newUser: "/completar-cadastro", // Redirecionar novos usuários
   },
   providers: [
     // Google OAuth
@@ -73,7 +74,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id;
-        token.type = (user as any).type;
+        token.type = user.type;
       }
       return token;
     },
@@ -85,12 +86,19 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    
+    async redirect({ url, baseUrl }) {
+      // Redirecionar novos usuários para completar cadastro
+      if (url === baseUrl || url.startsWith(baseUrl + '/login')) {
+        return baseUrl + '/completar-cadastro';
+      }
+      return url;
+    },
   },
   events: {
     async signIn({ user, account, isNewUser }) {
       // Se é um novo usuário via OAuth, criar perfil básico
       if (isNewUser && account?.provider !== "credentials") {
-        // O usuário precisará completar o cadastro
         console.log("Novo usuário OAuth:", user.email);
       }
     },
