@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { ChefHat, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +42,20 @@ export default function LoginPage() {
     email: '',
     senha: '',
   });
+
+  // Verificar se usuário já está logado
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      // Se não tem tipo definido, vai para completar cadastro
+      if (!session.user.type) {
+        router.push('/completar-cadastro');
+      } else if (session.user.type === 'CLIENT') {
+        router.push('/dashboard/cliente');
+      } else {
+        router.push('/dashboard/profissional');
+      }
+    }
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,15 +101,12 @@ export default function LoginPage() {
     try {
       const result = await signIn(provider, {
         redirect: false,
-        callbackUrl: '/dashboard/cliente',
       });
 
       if (result?.error) {
         setError('Erro ao fazer login. Tente novamente.');
-      } else if (result?.ok) {
-        // Verificar se é novo usuário ou completo
-        router.push('/dashboard/cliente');
       }
+      // O useEffect vai cuidar do redirecionamento
     } catch (err) {
       setError('Erro ao conectar com ' + provider);
     } finally {

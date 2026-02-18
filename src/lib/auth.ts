@@ -86,14 +86,6 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    
-    async redirect({ url, baseUrl }) {
-      // Redirecionar novos usuários para completar cadastro
-      if (url === baseUrl || url.startsWith(baseUrl + '/login')) {
-        return baseUrl + '/completar-cadastro';
-      }
-      return url;
-    },
   },
   events: {
     async signIn({ user, account, isNewUser }) {
