@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Valor total de propostas aceitas
     const acceptedProposalsValue = await prisma.proposal.aggregate({
       where: { status: 'ACCEPTED' },
-      _sum: { totalValue: true },
+      _sum: { totalPrice: true },
     });
 
     // Últimos usuários cadastrados

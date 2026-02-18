@@ -641,10 +641,20 @@ export default function HomePage() {
             </div>
 
             <div>
+              <h4 className="text-white font-semibold mb-4">Links Úteis</h4>
+              <ul className="space-y-3">
+                <li><Link href="/planos" className="hover:text-amber-400 transition-colors">Planos</Link></li>
+                <li><Link href="/termos" className="hover:text-amber-400 transition-colors">Termos de Uso</Link></li>
+                <li><Link href="/privacidade" className="hover:text-amber-400 transition-colors">Privacidade</Link></li>
+              </ul>
+            </div>
+
+            <div>
               <h4 className="text-white font-semibold mb-4">Conta</h4>
               <ul className="space-y-3">
                 <li><Link href="/login" className="hover:text-amber-400 transition-colors">Entrar</Link></li>
                 <li><Link href="/cadastro/cliente" className="hover:text-amber-400 transition-colors">Criar Conta</Link></li>
+                <li><Link href="/admin" className="hover:text-amber-400 transition-colors">Acesso Admin</Link></li>
               </ul>
             </div>
           </div>
