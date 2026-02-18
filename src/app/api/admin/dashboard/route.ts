@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
           total: totalProposals,
           pending: pendingProposals,
           accepted: acceptedProposals,
-          totalValue: acceptedProposalsValue._sum.totalValue || 0,
+          totalValue: acceptedProposalsValue._sum.totalPrice || 0,
         },
       },
       recentUsers,
