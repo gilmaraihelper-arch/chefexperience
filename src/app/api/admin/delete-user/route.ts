@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Deletar sessões
-    await prisma.nextauthSession.deleteMany({
+    await (prisma as any).nextauthSession.deleteMany({
       where: { userId: user.id },
     });
 
