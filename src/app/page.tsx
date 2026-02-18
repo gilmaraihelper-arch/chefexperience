@@ -216,19 +216,19 @@ export default function HomePage() {
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-4 mt-8">
-                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 bg-gradient-to-br from-amber-200 to-orange-200 h-48 flex items-center justify-center">
-                    <span className="text-4xl">💒</span>
+                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 ">
+                    <img src="/evento-casamento.jpg" alt="Casamento" className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500" />
                   </div>
-                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 bg-gradient-to-br from-orange-200 to-amber-200 h-56 flex items-center justify-center">
-                    <span className="text-4xl">🍽️</span>
+                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 ">
+                    <img src="/buffet-evento.jpg" alt="Buffet" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-500" />
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 bg-gradient-to-br from-amber-300 to-orange-300 h-56 flex items-center justify-center">
-                    <span className="text-4xl">👨‍🍳</span>
+                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 ">
+                    <img src="/chef-profissional.jpg" alt="Chef" className="w-full h-56 object-cover hover:scale-105 transition-transform duration-500" />
                   </div>
-                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 bg-gradient-to-br from-orange-300 to-amber-300 h-48 flex items-center justify-center">
-                    <span className="text-4xl">🎉</span>
+                  <div className="overflow-hidden rounded-2xl shadow-2xl shadow-amber-900/10 ">
+                    <img src="/equipe-cozinha.jpg" alt="Equipe" className="w-full h-48 object-cover hover:scale-105 transition-transform duration-500" />
                   </div>
                 </div>
               </div>
