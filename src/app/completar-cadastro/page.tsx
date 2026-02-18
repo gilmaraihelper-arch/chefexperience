@@ -31,7 +31,15 @@ export default function CompletarCadastroPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
-  }, [status, router]);
+    // Se usuário já tem tipo definido, redirecionar para dashboard
+    if (status === 'authenticated' && session?.user?.type) {
+      if (session.user.type === 'CLIENT') {
+        router.push('/dashboard/cliente');
+      } else {
+        router.push('/dashboard/profissional');
+      }
+    }
+  }, [status, session, router]);
 
   const handleTypeSelect = (type: string) => {
     setFormData({ ...formData, type });

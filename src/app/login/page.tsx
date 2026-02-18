@@ -99,17 +99,12 @@ export default function LoginPage() {
     setError('');
     
     try {
-      const result = await signIn(provider, {
-        redirect: false,
+      // Usar redirect: true para garantir que a sessão seja estabelecida
+      await signIn(provider, {
+        callbackUrl: '/completar-cadastro',
       });
-
-      if (result?.error) {
-        setError('Erro ao fazer login. Tente novamente.');
-      }
-      // O useEffect vai cuidar do redirecionamento
     } catch (err) {
       setError('Erro ao conectar com ' + provider);
-    } finally {
       setLoading(false);
     }
   };

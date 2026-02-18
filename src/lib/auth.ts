@@ -71,18 +71,36 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile, trigger }) {
+      // Quando um usuário faz login (via OAuth ou credentials)
       if (user) {
         token.id = user.id;
-        token.type = user.type;
+        token.email = user.email;
+        token.name = user.name;
+        token.type = (user as any).type || null; // Pode ser null para novos usuários OAuth
+        token.image = (user as any).image;
       }
+      
+      // Se trigger é update, recarrega do banco
+      if (trigger === 'update') {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+        });
+        if (dbUser) {
+          token.type = dbUser.type;
+        }
+      }
+      
       return token;
     },
     
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.type = token.type as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
+        session.user.type = token.type as string | null;
+        session.user.image = token.image as string | null;
       }
       return session;
     },
