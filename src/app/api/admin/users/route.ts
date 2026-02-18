@@ -63,12 +63,6 @@ export async function GET(request: NextRequest) {
         isVerified: true,
         createdAt: true,
         lastLoginAt: true,
-        _count: {
-          select: {
-            clientProfile: true,
-            professionalProfile: true,
-          },
-        },
       },
     });
 
