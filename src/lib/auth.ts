@@ -149,9 +149,6 @@ export const authOptions: NextAuthOptions = {
       
       return true;
     },
-      
-      return true;
-    },
     
     async redirect({ url, baseUrl }) {
       console.log("🔄 Redirect callback:", { url, baseUrl });
