@@ -26,7 +26,9 @@ import {
   Image as ImageIcon,
   X,
   Plus,
-  Sparkles
+  Sparkles,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const tiposEvento = [
   { id: 'casamento', label: 'Casamento', icon: '💒' },
@@ -77,7 +80,7 @@ const capacidade = [
 
 export default function CadastroProfissionalPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const isOAuth = status === 'authenticated' && !!session?.user?.email;
   
   // Log quando a página carrega
@@ -92,6 +95,8 @@ export default function CadastroProfissionalPage() {
   const [tipoPessoa, setTipoPessoa] = useState<'pf' | 'pj' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  
   const [formData, setFormData] = useState({
     // Dados básicos
     nome: session?.user?.name || '',
@@ -200,53 +205,80 @@ export default function CadastroProfissionalPage() {
   ];
 
   const handleSubmit = async () => {
+    console.log('📝 ==========================================');
+    console.log('📝 HANDLE SUBMIT INICIADO');
+    console.log('📝 ==========================================');
+    
     setLoading(true);
     setError('');
+    setSuccess(false);
 
     try {
-      console.log('📝 Submit - isOAuth:', isOAuth);
-      console.log('📝 Submit - session:', session?.user?.email);
+      console.log('📝 isOAuth:', isOAuth);
+      console.log('📝 session?.user?.email:', session?.user?.email);
       
-      const url = isOAuth ? '/api/auth/complete-profile-professional' : '/api/auth/register';
+      if (isOAuth && !session?.user?.email) {
+        throw new Error('Sessão não encontrada. Por favor, faça login novamente.');
+      }
 
-      const body = isOAuth
-        ? {
-            email: session?.user?.email,
-            name: formData.nome || formData.razaoSocial || session?.user?.name,
-            type: 'PROFESSIONAL',
-            personType: tipoPessoa?.toUpperCase(),
-            cpf: formData.cpf || null,
-            cnpj: formData.cnpj || null,
-            phone: formData.telefone,
-            cep: formData.cep,
-            address: formData.endereco,
-            number: formData.numero,
-            neighborhood: formData.bairro,
-            city: formData.cidade,
-            state: formData.estado,
-            description: formData.descricao,
-            raioAtendimento: formData.raioAtendimento,
-            faixaPreco: formData.faixaPreco,
-          }
-        : {
-            email: formData.email,
-            password: formData.senha || 'senha123',
-            name: formData.nome || formData.razaoSocial,
-            type: 'PROFESSIONAL',
-            personType: tipoPessoa?.toUpperCase(),
-            cpf: formData.cpf || null,
-            cnpj: formData.cnpj || null,
-            phone: formData.telefone,
-            cep: formData.cep,
-            address: formData.endereco,
-            number: formData.numero,
-            neighborhood: formData.bairro,
-            city: formData.cidade,
-            state: formData.estado,
-            description: formData.descricao,
-          };
+      const url = '/api/auth/complete-profile-professional';
 
-      console.log('📝 Submit - body:', body);
+      // Montar body completo com todos os dados
+      const body = {
+        // Dados básicos do usuário
+        email: session?.user?.email,
+        name: formData.nome || formData.razaoSocial || session?.user?.name,
+        type: 'PROFESSIONAL',
+        personType: tipoPessoa?.toUpperCase(),
+        cpf: formData.cpf || null,
+        cnpj: formData.cnpj || null,
+        razaoSocial: formData.razaoSocial || null,
+        nomeFantasia: formData.nomeFantasia || null,
+        
+        // Contato
+        phone: formData.telefone,
+        whatsapp: formData.whatsapp || null,
+        
+        // Endereço
+        cep: formData.cep,
+        address: formData.endereco,
+        number: formData.numero,
+        complement: formData.complemento || null,
+        neighborhood: formData.bairro,
+        city: formData.cidade,
+        state: formData.estado,
+        
+        // Descrição
+        description: formData.descricao,
+        
+        // Serviços e configurações
+        raioAtendimento: formData.raioAtendimento,
+        faixaPreco: formData.faixaPreco,
+        tiposEvento: formData.tiposEvento,
+        especialidades: formData.especialidades,
+        capacidade: formData.capacidade,
+        
+        // Serviços adicionais (booleanos)
+        temGarcom: formData.temGarcom,
+        temSoftDrinks: formData.temSoftDrinks,
+        temBebidaAlcoolica: formData.temBebidaAlcoolica,
+        temDecoracao: formData.temDecoracao,
+        temLocacao: formData.temLocacao,
+        temSom: formData.temSom,
+        temFotografo: formData.temFotografo,
+        temBartender: formData.temBartender,
+        temDoces: formData.temDoces,
+        temBolo: formData.temBolo,
+        temPratosTalheres: formData.temPratosTalheres,
+        
+        // Certificações e disponibilidade
+        certificacoes: formData.certificacoes,
+        formasPagamento: formData.formasPagamento,
+        diasSemana: formData.diasSemana,
+      };
+
+      console.log('📝 Enviando POST para:', url);
+      console.log('📝 Body completo:', JSON.stringify(body, null, 2));
 
       const response = await fetch(url, {
         method: 'POST',
@@ -254,24 +286,48 @@ export default function CadastroProfissionalPage() {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-      console.log('📝 Submit - response:', data);
+      console.log('📝 Response status:', response.status);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('📝 Response data:', data);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear resposta:', parseError);
+        throw new Error('Erro ao processar resposta do servidor');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar conta');
+        console.error('❌ Response não OK:', response.status, data);
+        throw new Error(data.error || data.message || `Erro ${response.status} ao salvar perfil`);
       }
 
-      if (isOAuth) {
+      console.log('✅ Cadastro concluído com sucesso!');
+      console.log('✅ User:', data.user);
+      console.log('✅ Profile:', data.profile);
+      
+      setSuccess(true);
+      
+      // Atualizar sessão antes de redirecionar
+      console.log('🔄 Atualizando sessão...');
+      await updateSession();
+      
+      // Pequeno delay para mostrar mensagem de sucesso
+      console.log('🔄 Redirecionando para home em 1.5s...');
+      setTimeout(() => {
         router.push('/');
-      } else {
-        router.push('/login');
-      }
+        router.refresh();
+      }, 1500);
+      
     } catch (err: any) {
-      console.error('📝 Submit - error:', err);
-      setError(err.message);
-      alert('Erro: ' + err.message);
+      console.error('❌ ERRO no submit:', err);
+      console.error('❌ Message:', err.message);
+      setError(err.message || 'Erro ao criar conta. Tente novamente.');
     } finally {
       setLoading(false);
+      console.log('📝 ==========================================');
+      console.log('📝 HANDLE SUBMIT FINALIZADO');
+      console.log('📝 ==========================================');
     }
   };
 
@@ -1118,6 +1174,24 @@ export default function CadastroProfissionalPage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Card className="shadow-xl shadow-amber-900/5">
           <CardContent className="p-8">
+            {/* Mensagens de erro/sucesso */}
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert className="mb-6 bg-green-50 border-green-200 text-green-800">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  <strong>Cadastro concluído!</strong> Seu perfil profissional foi criado com sucesso. 
+                  Redirecionando...
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {renderStep()}
 
             {/* Navigation Buttons */}
@@ -1126,6 +1200,7 @@ export default function CadastroProfissionalPage() {
                 variant="outline"
                 onClick={() => step === 1 ? router.push('/') : setStep(step - 1)}
                 className="border-gray-200"
+                disabled={loading || success}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 {step === 1 ? 'Voltar para Home' : 'Voltar'}
@@ -1134,7 +1209,7 @@ export default function CadastroProfissionalPage() {
               {step < 6 ? (
                 <Button
                   onClick={() => setStep(step + 1)}
-                  disabled={!isStepValid()}
+                  disabled={!isStepValid() || loading || success}
                   className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25"
                 >
                   Continuar
@@ -1143,10 +1218,15 @@ export default function CadastroProfissionalPage() {
               ) : (
                 <Button
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || success}
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25"
                 >
-                  {loading ? 'Finalizando...' : (
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Finalizando...
+                    </>
+                  ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4 mr-2" />
                       Finalizar Cadastro
@@ -1155,12 +1235,6 @@ export default function CadastroProfissionalPage() {
                 </Button>
               )}
             </div>
-
-            {error && (
-              <p className="mt-4 text-sm text-red-600 text-center">
-                {error}
-              </p>
-            )}
           </CardContent>
         </Card>
 

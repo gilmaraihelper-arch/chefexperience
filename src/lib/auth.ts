@@ -85,6 +85,7 @@ export const authOptions: NextAuthOptions = {
       console.log("Provider:", account?.provider);
       console.log("Email:", user?.email);
       console.log("User ID original:", user?.id);
+      console.log("User name:", user?.name);
       
       // Para OAuth, criar/atualizar usuário no banco manualmente
       if (account?.provider === "google" && user.email) {
@@ -94,7 +95,7 @@ export const authOptions: NextAuthOptions = {
           // Verificar se usuário já existe
           console.log("🔍 Verificando se usuário existe...");
           const existingUsers = await prisma.$queryRaw`
-            SELECT id, email FROM "User" WHERE email = ${user.email} LIMIT 1
+            SELECT id, email, name, type FROM "User" WHERE email = ${user.email} LIMIT 1
           `;
           
           console.log("📊 Usuários encontrados:", existingUsers);
@@ -104,14 +105,26 @@ export const authOptions: NextAuthOptions = {
           if (Array.isArray(existingUsers) && existingUsers.length > 0) {
             dbUser = existingUsers[0];
             console.log("✅ Usuário JÁ EXISTE:", dbUser.id);
+            
+            // Atualizar nome se necessário
+            if (user.name && user.name !== dbUser.name) {
+              console.log("🔄 Atualizando nome do usuário...");
+              await prisma.$queryRaw`
+                UPDATE "User" SET name = ${user.name}, "updatedAt" = NOW() WHERE id = ${dbUser.id}
+              `;
+              console.log("✅ Nome atualizado");
+            }
           } else {
             console.log("🆕 Usuário NÃO existe, criando novo...");
             
             try {
+              const userName = user.name || user.email.split('@')[0];
+              console.log("📝 Nome para novo usuário:", userName);
+              
               const newUsers = await prisma.$queryRaw`
                 INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
-                VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, '', NOW(), NOW())
-                RETURNING id, email, name
+                VALUES (gen_random_uuid(), ${user.email}, ${userName}, '', NOW(), NOW())
+                RETURNING id, email, name, type
               `;
               
               console.log("📦 Resultado INSERT:", newUsers);
@@ -121,23 +134,31 @@ export const authOptions: NextAuthOptions = {
                 console.log("✅ NOVO USUÁRIO CRIADO:", dbUser);
               } else {
                 console.error("❌ INSERT não retornou dados");
+                // Não retorna false aqui, deixa o fluxo continuar
               }
             } catch (insertError: any) {
               console.error("❌ ERRO NO INSERT:", insertError.message);
               console.error("Stack:", insertError.stack);
+              // Não retorna false, deixa continuar para não travar o login
             }
           }
           
           if (dbUser?.id) {
             console.log("📝 Atualizando user.id de", user.id, "para", dbUser.id);
             user.id = dbUser.id;
+            
+            // Adicionar informações extras ao user
+            (user as any).type = dbUser.type;
           } else {
             console.error("❌ dbUser inválido:", dbUser);
+            // Mesmo sem dbUser, não bloqueamos o login
+            // A API de complete-profile vai tentar criar/atualizar
           }
           
         } catch (error: any) {
-          console.error("❌ ERRO GERAL:", error.message);
+          console.error("❌ ERRO GERAL no signIn:", error.message);
           console.error("Stack:", error.stack);
+          // Não retorna false, deixa o fluxo continuar
         }
         
         console.log("========================================");
@@ -173,6 +194,7 @@ export const authOptions: NextAuthOptions = {
         hasUser: !!user, 
         hasTokenId: !!token.id,
         userId: user?.id,
+        tokenId: token?.id,
         trigger 
       });
       
@@ -182,6 +204,7 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name = user.name;
         token.image = (user as any).image;
+        token.type = (user as any).type;
         console.log("✅ Token populado com user ID:", user.id);
       }
       
@@ -207,15 +230,22 @@ export const authOptions: NextAuthOptions = {
       console.log("👤 Session callback:", { 
         hasToken: !!token, 
         hasSessionUser: !!session.user,
-        tokenType: token?.type 
+        tokenType: token?.type,
+        tokenId: token?.id
       });
       
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.type = token.type as string | null;
-        session.user.image = token.image as string | null;
+        (session.user as any).id = token.id as string;
+        (session.user as any).email = token.email as string;
+        (session.user as any).name = token.name as string;
+        (session.user as any).type = token.type as string | null;
+        (session.user as any).image = token.image as string | null;
+        
+        console.log("✅ Session populada:", {
+          id: (session.user as any).id,
+          email: (session.user as any).email,
+          type: (session.user as any).type
+        });
       }
       return session;
     },
