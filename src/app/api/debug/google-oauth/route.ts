@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// WORKAROUND: Forçar URL correta sem quebra de linha (deve ser igual ao auth.ts)
+const FIXED_NEXTAUTH_URL = "https://chefexperience.vercel.app";
+process.env.NEXTAUTH_URL = FIXED_NEXTAUTH_URL;
+
 // GET /api/debug/google-oauth - Diagnóstico completo do OAuth
 export async function GET(request: NextRequest) {
   const diagnostics = {
