@@ -169,8 +169,8 @@ export async function DELETE(request: NextRequest) {
       // Deletar mensagens enviadas
       prisma.message.deleteMany({ where: { senderId: id } }),
       prisma.message.deleteMany({ where: { receiverId: id } }),
-      // Deletar reviews
-      prisma.review.deleteMany({ where: { userId: id } }),
+      // Deletar reviews (o campo é reviewerId, não userId)
+      prisma.review.deleteMany({ where: { reviewerId: id } }),
       // Deletar sessões
       prisma.session.deleteMany({ where: { userId: id } }),
       // Deletar o usuário (ProfessionalProfile e ClientProfile são deletados via Cascade)
