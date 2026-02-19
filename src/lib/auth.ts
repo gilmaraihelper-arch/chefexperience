@@ -79,11 +79,20 @@ export const authOptions: NextAuthOptions = {
     
     async redirect({ url, baseUrl }) {
       console.log("🔄 Redirect callback:", { url, baseUrl });
-      // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
+      
+      try {
+        // URLs relativas
+        if (url.startsWith("/")) return `${baseUrl}${url}`;
+        
+        // URLs absolutas do mesmo origin
+        const target = new URL(url);
+        if (target.origin === baseUrl) return url;
+      } catch (error) {
+        console.error("❌ Erro no redirect callback:", error, { url, baseUrl });
+      }
+      
+      // Fallback seguro
+      return baseUrl;
     },
     
     async jwt({ token, user, account, profile, trigger }) {
