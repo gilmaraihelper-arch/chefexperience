@@ -614,6 +614,8 @@ export default function AdminDashboardPage() {
     } catch (error) {
       console.error('Erro ao buscar:', error);
     }
+  };
+
   // Deletar usuários de teste do gmail
   const handleDeleteTestUsers = async () => {
     const testEmails = [
