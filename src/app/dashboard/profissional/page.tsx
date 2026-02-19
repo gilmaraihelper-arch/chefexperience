@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { 
   ChefHat, 
   Calendar, 
@@ -194,6 +195,11 @@ const faixaPrecoLabels: Record<string, string> = {
 
 export default function DashboardProfissionalPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  
+  // Pegar nome do usuário da sessão
+  const userName = session?.user?.name || 'Chef';
+  const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
   const [abaAtiva, setAbaAtiva] = useState('disponiveis');
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false);
@@ -249,7 +255,7 @@ export default function DashboardProfissionalPage() {
                 <span>Plano Profissional</span>
               </div>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                CM
+                {userInitials}
               </div>
             </div>
           </div>
@@ -260,7 +266,7 @@ export default function DashboardProfissionalPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Olá, Chef Maria! 👨‍🍳</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Olá, {userName}! 👨‍🍳</h1>
           <p className="text-gray-600">Aqui está o resumo da sua atividade</p>
         </div>
 
