@@ -49,6 +49,8 @@ export default function LoginPage() {
       // Se não tem tipo definido, vai para completar cadastro
       if (!session.user.type) {
         router.push('/completar-cadastro');
+      } else if (session.user.type === 'ADMIN') {
+        router.push('/admin');
       } else if (session.user.type === 'CLIENT') {
         router.push('/dashboard/cliente');
       } else {
