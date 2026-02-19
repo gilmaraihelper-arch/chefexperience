@@ -64,12 +64,24 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, email, credentials }) {
+      console.log("🔑 SignIn callback:", { provider: account?.provider, email: user.email });
+      
       // Permitir login social
       if (account?.provider === "google") {
+        console.log("✅ Google login permitido");
         return true;
       }
       return true;
+    },
+    
+    async redirect({ url, baseUrl }) {
+      console.log("🔄 Redirect callback:", { url, baseUrl });
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     },
     
     async jwt({ token, user, account, profile, trigger }) {
@@ -112,10 +124,27 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account, isNewUser }) {
-      // Se é um novo usuário via OAuth, criar perfil básico
+      console.log("📊 Event signIn:", { 
+        email: user.email, 
+        provider: account?.provider, 
+        isNewUser,
+        userId: user.id 
+      });
+      
+      // Se é um novo usuário via OAuth, logar informação
       if (isNewUser && account?.provider !== "credentials") {
-        console.log("Novo usuário OAuth:", user.email);
+        console.log("🆕 Novo usuário OAuth criado:", user.email);
       }
+    },
+    async createUser({ user }) {
+      console.log("👤 Usuário criado no banco:", { email: user.email, id: user.id });
+    },
+    async linkAccount({ user, account, profile }) {
+      console.log("🔗 Conta vinculada:", { 
+        userId: user.id, 
+        provider: account.provider,
+        providerAccountId: account.providerAccountId 
+      });
     },
   },
 };
