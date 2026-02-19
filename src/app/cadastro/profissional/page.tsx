@@ -307,6 +307,7 @@ export default function CadastroProfissionalPage() {
       console.log('✅ Profile:', data.profile);
       
       setSuccess(true);
+      alert('✅ Cadastro concluído com sucesso! Redirecionando...');
       
       // Atualizar sessão antes de redirecionar
       console.log('🔄 Atualizando sessão...');
@@ -323,6 +324,7 @@ export default function CadastroProfissionalPage() {
       console.error('❌ ERRO no submit:', err);
       console.error('❌ Message:', err.message);
       setError(err.message || 'Erro ao criar conta. Tente novamente.');
+      alert('❌ ERRO: ' + (err.message || 'Erro ao criar conta. Tente novamente.'));
     } finally {
       setLoading(false);
       console.log('📝 ==========================================');
