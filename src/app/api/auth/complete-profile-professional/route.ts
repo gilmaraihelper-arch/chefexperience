@@ -237,17 +237,34 @@ export async function POST(request: NextRequest) {
       }
       
       console.log("✅ ProfessionalProfile criado/atualizado com sucesso");
+      
+      // Verificar se foi realmente criado
+      const verifyProfile = await prisma.$queryRaw`
+        SELECT id, "userId" FROM "ProfessionalProfile" WHERE "userId" = ${userId} LIMIT 1
+      `;
+      console.log("🔍 Verificação pós-save:", verifyProfile);
+      
     } catch (profileError: any) {
       console.error("❌ Erro ao criar ProfessionalProfile:", profileError.message);
+      console.error("Stack:", profileError.stack);
       // Não retorna erro - o User já foi atualizado
     }
 
     console.log("📝 ==========================================");
     console.log("📝 API complete-profile-professional CONCLUÍDA COM SUCESSO");
 
+    // Buscar o ProfessionalProfile criado para retornar
+    const profileResult = await prisma.$queryRaw`
+      SELECT id FROM "ProfessionalProfile" WHERE "userId" = ${userId} LIMIT 1
+    `;
+    
+    const profile = Array.isArray(profileResult) ? profileResult[0] : null;
+    console.log("✅ Profile retornado:", profile);
+
     return NextResponse.json({
       success: true,
       user: updatedUser,
+      profile: profile,
       message: 'Perfil profissional atualizado com sucesso'
     });
   } catch (error: any) {
