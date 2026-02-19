@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// Forçar rota dinâmica (não pré-renderizar)
+export const dynamic = 'force-dynamic';
+
 // Middleware para verificar se é admin
 async function isAdmin(req: NextRequest) {
   const session = await getServerSession(authOptions);
