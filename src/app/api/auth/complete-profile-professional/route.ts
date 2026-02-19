@@ -38,9 +38,37 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Buscar usuário pelo email
+    console.log("🔍 Buscando usuário pelo email:", session.user.email);
+    
     const users = await prisma.$queryRaw`
-      SELECT id FROM "User" WHERE email = ${session.user.email} LIMIT 1
+      SELECT id, email FROM "User" WHERE email = ${session.user.email} LIMIT 1
     `;
+    
+    console.log("🔍 Usuários encontrados:", users);
+    
+    if (!Array.isArray(users) || users.length === 0) {
+      // Tentar criar usuário se não existir
+      console.log("🆕 Usuário não encontrado, criando...");
+      
+      try {
+        const newUsers = await prisma.$queryRaw`
+          INSERT INTO "User" (id, email, name, "createdAt", "updatedAt")
+          VALUES (gen_random_uuid(), ${session.user.email}, ${session.user.name || session.user.email.split('@')[0]}, NOW(), NOW())
+          RETURNING id, email
+        `;
+        
+        if (Array.isArray(newUsers) && newUsers.length > 0) {
+          console.log("✅ Usuário criado:", newUsers[0]);
+          users.push(newUsers[0]);
+        }
+      } catch (createError) {
+        console.error("❌ Erro ao criar usuário:", createError);
+        return NextResponse.json(
+          { error: 'Usuário não encontrado e não pôde ser criado' },
+          { status: 404 }
+        );
+      }
+    }
     
     if (!Array.isArray(users) || users.length === 0) {
       return NextResponse.json(
