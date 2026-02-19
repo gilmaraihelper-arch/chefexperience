@@ -63,33 +63,19 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.senha,
-        }),
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: formData.email,
+        password: formData.senha,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao fazer login');
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirecionar baseado no tipo
-      if (data.user.type === 'CLIENT') {
-        router.push('/dashboard/cliente');
-      } else {
-        router.push('/dashboard/profissional');
-      }
+      // O useEffect vai cuidar do redirecionamento baseado na sessão
     } catch (err: any) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };

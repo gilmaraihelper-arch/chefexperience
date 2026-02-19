@@ -85,34 +85,24 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    // Verifica NextAuth session OU localStorage
-    const checkAuth = () => {
-      // Primeiro tenta NextAuth
-      if (status === 'authenticated') {
-        loadDashboardData();
-        return;
-      }
-      
-      // Fallback para localStorage
-      const userData = localStorage.getItem('user');
-      const token = localStorage.getItem('admin-token');
-      
-      if (userData && token) {
-        const user = JSON.parse(userData);
-        if (user.type === 'ADMIN') {
-          loadDashboardData();
-          return;
-        }
-      }
-      
-      // Se não autenticado, redireciona
-      if (status === 'unauthenticated') {
-        router.push('/login');
-      }
-    };
+    if (status === 'loading') return;
 
-    checkAuth();
-  }, [status, router]);
+    // Se não autenticado, redireciona para login
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+
+    // Se autenticado, verifica se é ADMIN
+    if (status === 'authenticated' && session?.user) {
+      if (session.user.type === 'ADMIN') {
+        loadDashboardData();
+      } else {
+        // Não é admin, redireciona para home
+        router.push('/');
+      }
+    }
+  }, [status, session, router]);
 
   const loadDashboardData = async () => {
     try {
