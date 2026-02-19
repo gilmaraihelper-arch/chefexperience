@@ -147,6 +147,7 @@ export const authOptions: NextAuthOptions = {
       console.log("🔐 JWT callback:", { 
         hasUser: !!user, 
         hasTokenId: !!token.id,
+        userId: user?.id,
         trigger 
       });
       
@@ -156,19 +157,18 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name = user.name;
         token.image = (user as any).image;
-        console.log("✅ Token populado com user:", user.email);
+        console.log("✅ Token populado com user ID:", user.id);
       }
       
       // SEMPRE buscar o type atualizado do banco
       if (token.id) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { type: true }
-          });
-          if (dbUser) {
-            token.type = dbUser.type;
-            console.log("✅ Type do usuário carregado:", dbUser.type);
+          const users = await prisma.$queryRaw`
+            SELECT type FROM "User" WHERE id = ${token.id} LIMIT 1
+          `;
+          if (Array.isArray(users) && users.length > 0) {
+            token.type = users[0].type;
+            console.log("✅ Type do usuário carregado:", users[0].type);
           }
         } catch (e) {
           console.error('❌ Erro ao buscar tipo do usuário:', e);
