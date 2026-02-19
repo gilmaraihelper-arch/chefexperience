@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { 
   ChefHat, 
   ArrowRight, 
@@ -24,14 +25,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 export default function CadastroClientePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const isOAuth = status === 'authenticated' && session?.user?.email;
+  
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
+    nome: session?.user?.name || '',
+    email: session?.user?.email || '',
     telefone: '',
     whatsapp: '',
     cpf: '',
@@ -48,6 +52,17 @@ export default function CadastroClientePage() {
     receberNovidades: false,
   });
 
+  // Atualizar form quando sessão carregar
+  useEffect(() => {
+    if (session?.user) {
+      setFormData(prev => ({
+        ...prev,
+        nome: session.user.name || prev.nome,
+        email: session.user.email || prev.email,
+      }));
+    }
+  }, [session]);
+
   const updateForm = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
@@ -60,6 +75,8 @@ export default function CadastroClientePage() {
       case 2:
         return formData.cep && formData.endereco && formData.cidade && formData.estado;
       case 3:
+        // Se for OAuth, não precisa validar senha
+        if (isOAuth) return formData.aceitaTermos;
         return formData.senha.length >= 6 && formData.senha === formData.confirmarSenha && formData.aceitaTermos;
       default:
         return true;
@@ -71,27 +88,49 @@ export default function CadastroClientePage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.senha,
-          name: formData.nome,
-          phone: formData.telefone,
-          whatsapp: formData.whatsapp,
-          type: 'CLIENT',
-          personType: 'PF',
-          cpf: formData.cpf,
-          cep: formData.cep,
-          address: formData.endereco,
-          number: formData.numero,
-          complement: formData.complemento,
-          neighborhood: formData.bairro,
-          city: formData.cidade,
-          state: formData.estado,
-        }),
-      });
+      let response;
+      
+      if (isOAuth) {
+        // Se veio do OAuth, usar complete-profile
+        response = await fetch('/api/auth/complete-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'CLIENT',
+            phone: formData.telefone,
+            cep: formData.cep,
+            address: formData.endereco,
+            number: formData.numero,
+            complement: formData.complemento,
+            neighborhood: formData.bairro,
+            city: formData.cidade,
+            state: formData.estado,
+          }),
+        });
+      } else {
+        // Cadastro normal
+        response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.senha,
+            name: formData.nome,
+            phone: formData.telefone,
+            whatsapp: formData.whatsapp,
+            type: 'CLIENT',
+            personType: 'PF',
+            cpf: formData.cpf,
+            cep: formData.cep,
+            address: formData.endereco,
+            number: formData.numero,
+            complement: formData.complemento,
+            neighborhood: formData.bairro,
+            city: formData.cidade,
+            state: formData.estado,
+          }),
+        });
+      }
 
       const data = await response.json();
 
@@ -99,22 +138,27 @@ export default function CadastroClientePage() {
         throw new Error(data.error || 'Erro ao criar conta');
       }
 
-      // Login automático
-      const loginResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.senha,
-        }),
-      });
-
-      const loginData = await loginResponse.json();
-
-      if (loginResponse.ok) {
-        localStorage.setItem('token', loginData.token);
-        localStorage.setItem('user', JSON.stringify(loginData.user));
+      if (isOAuth) {
+        // Se for OAuth, já está logado, só redirecionar
         router.push('/dashboard/cliente');
+      } else {
+        // Login automático para cadastro normal
+        const loginResponse = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.senha,
+          }),
+        });
+
+        const loginData = await loginResponse.json();
+
+        if (loginResponse.ok) {
+          localStorage.setItem('token', loginData.token);
+          localStorage.setItem('user', JSON.stringify(loginData.user));
+          router.push('/dashboard/cliente');
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -154,20 +198,37 @@ export default function CadastroClientePage() {
                 </div>
               </div>
 
-              <div className="md:col-span-2">
-                <Label htmlFor="email">E-mail *</Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateForm('email', e.target.value)}
-                    placeholder="seu@email.com"
-                    className="pl-10"
-                  />
+              {!isOAuth && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="email">E-mail *</Label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => updateForm('email', e.target.value)}
+                      placeholder="seu@email.com"
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {isOAuth && formData.email && (
+                <div className="md:col-span-2">
+                  <Label>E-mail (via Google)</Label>
+                  <div className="relative mt-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className="pl-10 bg-gray-100"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="telefone">Telefone *</Label>
@@ -311,58 +372,69 @@ export default function CadastroClientePage() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Crie sua senha</h2>
-              <p className="text-gray-600">Proteja sua conta com uma senha segura</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {isOAuth ? 'Termos de Uso' : 'Crie sua senha'}
+              </h2>
+              <p className="text-gray-600">
+                {isOAuth 
+                  ? 'Revise e aceite os termos para completar seu cadastro'
+                  : 'Proteja sua conta com uma senha segura'
+                }
+              </p>
             </div>
 
             <div className="space-y-6 max-w-md mx-auto">
-              <div>
-                <Label htmlFor="senha">Senha *</Label>
-                <div className="relative mt-1">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="senha"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.senha}
-                    onChange={(e) => updateForm('senha', e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="pl-10 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
-              </div>
+              {!isOAuth && (
+                <>
+                  <div>
+                    <Label htmlFor="senha">Senha *</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        id="senha"
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.senha}
+                        onChange={(e) => updateForm('senha', e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="pl-10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+                  </div>
 
-              <div>
-                <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
-                <div className="relative mt-1">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="confirmarSenha"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={formData.confirmarSenha}
-                    onChange={(e) => updateForm('confirmarSenha', e.target.value)}
-                    placeholder="Digite a senha novamente"
-                    className="pl-10 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {formData.confirmarSenha && formData.senha !== formData.confirmarSenha && (
-                  <p className="text-xs text-red-500 mt-1">As senhas não coincidem</p>
-                )}
-              </div>
+                  <div>
+                    <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
+                    <div className="relative mt-1">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        id="confirmarSenha"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={formData.confirmarSenha}
+                        onChange={(e) => updateForm('confirmarSenha', e.target.value)}
+                        placeholder="Digite a senha novamente"
+                        className="pl-10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    {formData.confirmarSenha && formData.senha !== formData.confirmarSenha && (
+                      <p className="text-xs text-red-500 mt-1">As senhas não coincidem</p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="space-y-4 pt-4">
                 <label className="flex items-start gap-3 cursor-pointer">
