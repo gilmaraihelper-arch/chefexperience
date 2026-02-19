@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
     
     console.log("🔍 Usuários encontrados:", users);
     
+    let userId: string;
+    
     if (!Array.isArray(users) || users.length === 0) {
       // Tentar criar usuário se não existir
       console.log("🆕 Usuário não encontrado, criando...");
@@ -59,7 +61,12 @@ export async function POST(request: NextRequest) {
         
         if (Array.isArray(newUsers) && newUsers.length > 0) {
           console.log("✅ Usuário criado:", newUsers[0]);
-          users.push(newUsers[0]);
+          userId = newUsers[0].id;
+        } else {
+          return NextResponse.json(
+            { error: 'Erro ao criar usuário' },
+            { status: 500 }
+          );
         }
       } catch (createError) {
         console.error("❌ Erro ao criar usuário:", createError);
@@ -68,18 +75,10 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         );
       }
+    } else {
+      userId = users[0].id;
     }
     
-    if (!Array.isArray(users) || users.length === 0) {
-      return NextResponse.json(
-        { error: 'Usuário não encontrado' },
-        { status: 404 }
-      );
-    }
-    
-    const userId = users[0].id;
-    
-    // Atualizar usuário - simplified
     const updatedUsers = await prisma.$queryRaw`
       UPDATE "User"
       SET 
