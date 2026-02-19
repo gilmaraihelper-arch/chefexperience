@@ -1,8 +1,7 @@
 import { NextAuthOptions } from "next-auth";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma, prismaAuth } from "./prisma";
+import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
 // WORKAROUND: Forçar URL correta sem quebra de linha
@@ -10,7 +9,7 @@ const FIXED_NEXTAUTH_URL = "https://chefexperience.vercel.app";
 process.env.NEXTAUTH_URL = FIXED_NEXTAUTH_URL;
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prismaAuth) as any,
+  // Adapter removido - usando JWT puro para OAuth
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 dias
@@ -79,20 +78,45 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account, profile }) {
       console.log("🔑 SignIn callback:", { 
         provider: account?.provider, 
         email: user.email,
         userId: user.id,
-        accountId: account?.providerAccountId,
         hasProfile: !!profile
       });
       
-      // Permitir login social
-      if (account?.provider === "google") {
-        console.log("✅ Google login permitido");
-        return true;
+      // Para OAuth, criar/atualizar usuário no banco manualmente
+      if (account?.provider === "google" && user.email) {
+        try {
+          // Verificar se usuário já existe
+          let dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+          
+          if (!dbUser) {
+            // Criar novo usuário
+            dbUser = await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name || user.email.split('@')[0],
+                image: user.image,
+                // type será null até completar cadastro
+              },
+            });
+            console.log("✅ Novo usuário OAuth criado:", dbUser.id);
+          } else {
+            console.log("✅ Usuário OAuth já existe:", dbUser.id);
+          }
+          
+          // Atualizar o user.id para o ID do banco
+          user.id = dbUser.id;
+        } catch (error) {
+          console.error("❌ Erro ao criar/atualizar usuário OAuth:", error);
+          return false;
+        }
       }
+      
       return true;
     },
     

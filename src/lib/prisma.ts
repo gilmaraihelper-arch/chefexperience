@@ -4,7 +4,6 @@ import { Pool } from 'pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
-  prismaAuth: PrismaClient | undefined
 }
 
 const createPrismaClient = () => {
@@ -20,14 +19,4 @@ const createPrismaClient = () => {
 // Client para uso geral (com adapter pg)
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
-// Client para NextAuth (sem adapter, compatível com @next-auth/prisma-adapter)
-const createPrismaAuthClient = () => {
-  return new PrismaClient()
-}
-
-export const prismaAuth = globalForPrisma.prismaAuth ?? createPrismaAuthClient()
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-  globalForPrisma.prismaAuth = prismaAuth
-}
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
