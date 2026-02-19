@@ -79,59 +79,76 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log("🔑 SignIn callback:", { 
-        provider: account?.provider, 
-        email: user.email,
-        userId: user.id,
-        hasProfile: !!profile
-      });
+      console.log("========================================");
+      console.log("🔑 SIGNIN CALLBACK INICIADO");
+      console.log("========================================");
+      console.log("Provider:", account?.provider);
+      console.log("Email:", user?.email);
+      console.log("User ID original:", user?.id);
       
       // Para OAuth, criar/atualizar usuário no banco manualmente
       if (account?.provider === "google" && user.email) {
-        console.log("🔍 OAuth detectado para:", user.email);
+        console.log("✅ É Google OAuth, processando...");
+        
         try {
-          console.log("🔍 Buscando usuário no banco...");
-          
           // Verificar se usuário já existe
+          console.log("🔍 Verificando se usuário existe...");
           const existingUsers = await prisma.$queryRaw`
             SELECT id, email FROM "User" WHERE email = ${user.email} LIMIT 1
           `;
           
-          console.log("🔍 Resultado da busca:", existingUsers);
+          console.log("📊 Usuários encontrados:", existingUsers);
           
           let dbUser: any;
           
           if (Array.isArray(existingUsers) && existingUsers.length > 0) {
             dbUser = existingUsers[0];
-            console.log("✅ Usuário já existe:", dbUser.id);
+            console.log("✅ Usuário JÁ EXISTE:", dbUser.id);
           } else {
-            console.log("🆕 Criando novo usuário...");
+            console.log("🆕 Usuário NÃO existe, criando novo...");
+            
             try {
               const newUsers = await prisma.$queryRaw`
                 INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
                 VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, '', NOW(), NOW())
-                RETURNING id, email
+                RETURNING id, email, name
               `;
-              console.log("🆕 Resultado da inserção:", newUsers);
-              dbUser = Array.isArray(newUsers) ? newUsers[0] : null;
-              console.log("✅ Novo usuário criado:", dbUser?.id);
+              
+              console.log("📦 Resultado INSERT:", newUsers);
+              
+              if (Array.isArray(newUsers) && newUsers.length > 0) {
+                dbUser = newUsers[0];
+                console.log("✅ NOVO USUÁRIO CRIADO:", dbUser);
+              } else {
+                console.error("❌ INSERT não retornou dados");
+              }
             } catch (insertError: any) {
-              console.error("❌ Erro na inserção:", insertError.message);
-              throw insertError;
+              console.error("❌ ERRO NO INSERT:", insertError.message);
+              console.error("Stack:", insertError.stack);
             }
           }
           
-          if (dbUser && dbUser.id) {
-            console.log("📝 Atualizando user.id para:", dbUser.id);
+          if (dbUser?.id) {
+            console.log("📝 Atualizando user.id de", user.id, "para", dbUser.id);
             user.id = dbUser.id;
           } else {
             console.error("❌ dbUser inválido:", dbUser);
           }
+          
         } catch (error: any) {
-          console.error("❌ Erro no signIn OAuth:", error.message);
+          console.error("❌ ERRO GERAL:", error.message);
           console.error("Stack:", error.stack);
         }
+        
+        console.log("========================================");
+        console.log("🔑 SIGNIN CALLBACK FINALIZADO");
+        console.log("========================================");
+      } else {
+        console.log("ℹ️ Não é Google OAuth ou sem email, pulando criação de usuário");
       }
+      
+      return true;
+    },
       
       return true;
     },
