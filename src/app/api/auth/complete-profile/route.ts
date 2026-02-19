@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,30 +27,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualizar usuário
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        type,
-        phone,
-        cep,
-        address,
-        number,
-        complement,
-        neighborhood,
-        city,
-        state,
-        personType: 'PF', // Default para OAuth
-      },
-    });
+    // Atualizar usuário usando queryRaw para evitar problemas de schema
+    const updatedUsers = await prisma.$queryRaw`
+      UPDATE "User"
+      SET 
+        type = ${type}::"UserType",
+        phone = ${phone},
+        cep = ${cep},
+        address = ${address},
+        number = ${number},
+        complement = ${complement || null},
+        neighborhood = ${neighborhood},
+        city = ${city},
+        state = ${state},
+        "personType" = 'PF'::"PersonType",
+        "updatedAt" = NOW()
+      WHERE id = ${session.user.id}
+      RETURNING id, email, name, type
+    `;
+
+    const updatedUser = Array.isArray(updatedUsers) ? updatedUsers[0] : null;
+
+    if (!updatedUser) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
+      );
+    }
 
     // Se for cliente, criar perfil de cliente
     if (type === 'CLIENT') {
-      await prisma.clientProfile.create({
-        data: {
-          userId: updatedUser.id,
-        },
-      });
+      try {
+        await prisma.$queryRaw`
+          INSERT INTO "ClientProfile" (id, "userId", "createdAt", "updatedAt")
+          VALUES (gen_random_uuid(), ${updatedUser.id}, NOW(), NOW())
+          ON CONFLICT ("userId") DO NOTHING
+        `;
+      } catch (profileError) {
+        console.log('Perfil de cliente já existe ou erro:', profileError);
+      }
     }
 
     return NextResponse.json({
