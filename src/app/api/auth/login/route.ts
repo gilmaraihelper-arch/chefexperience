@@ -34,6 +34,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar senha
+    if (!user.password) {
+      return NextResponse.json(
+        { error: 'Use login social para esta conta' },
+        { status: 401 }
+      )
+    }
+    
     const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
