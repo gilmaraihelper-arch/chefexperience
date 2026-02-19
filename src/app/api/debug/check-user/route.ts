@@ -22,11 +22,6 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Buscar accounts separadamente
-    const accounts = await prisma.account.findMany({
-      where: { userId: user.id },
-    });
-    
     return NextResponse.json({
       exists: true,
       user: {
@@ -35,11 +30,6 @@ export async function GET(request: NextRequest) {
         name: user.name,
         type: user.type,
         hasPassword: !!user.password,
-        accountsCount: accounts.length,
-        accounts: accounts.map(a => ({
-          provider: a.provider,
-          providerAccountId: a.providerAccountId?.substring(0, 10) + '...',
-        }))
       }
     });
   } catch (error: any) {
