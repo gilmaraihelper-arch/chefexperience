@@ -104,12 +104,19 @@ export const authOptions: NextAuthOptions = {
     },
     
     async jwt({ token, user, account, profile, trigger }) {
+      console.log("🔐 JWT callback:", { 
+        hasUser: !!user, 
+        hasTokenId: !!token.id,
+        trigger 
+      });
+      
       // Quando um usuário faz login (via OAuth ou credentials)
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
         token.image = (user as any).image;
+        console.log("✅ Token populado com user:", user.email);
       }
       
       // SEMPRE buscar o type atualizado do banco
@@ -121,9 +128,10 @@ export const authOptions: NextAuthOptions = {
           });
           if (dbUser) {
             token.type = dbUser.type;
+            console.log("✅ Type do usuário carregado:", dbUser.type);
           }
         } catch (e) {
-          console.error('Erro ao buscar tipo do usuário:', e);
+          console.error('❌ Erro ao buscar tipo do usuário:', e);
         }
       }
       
@@ -131,6 +139,12 @@ export const authOptions: NextAuthOptions = {
     },
     
     async session({ session, token }) {
+      console.log("👤 Session callback:", { 
+        hasToken: !!token, 
+        hasSessionUser: !!session.user,
+        tokenType: token?.type 
+      });
+      
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
@@ -163,6 +177,13 @@ export const authOptions: NextAuthOptions = {
         userId: user.id, 
         provider: account.provider,
         providerAccountId: account.providerAccountId 
+      });
+    },
+    async session({ session, token }) {
+      console.log("📅 Session event:", { 
+        hasSession: !!session, 
+        hasUser: !!session?.user,
+        userEmail: session?.user?.email 
       });
     },
   },
