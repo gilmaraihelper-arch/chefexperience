@@ -114,6 +114,9 @@ export default function CadastroProfissionalPage() {
     faixaPreco: '',
     capacidade: [] as string[],
     
+    // Localização / Raio
+    raioAtendimento: 50,
+    
     // Serviços adicionais
     temGarcom: false,
     temSoftDrinks: false,
@@ -572,14 +575,56 @@ export default function CadastroProfissionalPage() {
               </div>
             </div>
 
-            <Card className="bg-amber-50 border-amber-200">
+            {/* Raio de Atendimento */}
+            <div className="md:col-span-3 bg-amber-50 rounded-xl p-6 border border-amber-200">
+              <Label className="text-base font-semibold mb-4 block flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-amber-600" />
+                Raio de Atendimento
+              </Label>
+              <p className="text-sm text-gray-600 mb-4">
+                Até quantos quilômetros você está disposto a se deslocar para atender eventos?
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500 w-12">0 km</span>
+                  <input
+                    type="range"
+                    min="10"
+                    max="300"
+                    step="10"
+                    value={formData.raioAtendimento}
+                    onChange={(e) => updateForm('raioAtendimento', parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                  />
+                  <span className="text-sm text-gray-500 w-16">300 km</span>
+                </div>
+                
+                <div className="flex items-center justify-center">
+                  <Badge className="text-lg px-4 py-2 bg-amber-100 text-amber-700 border-amber-300">
+                    {formData.raioAtendimento} km
+                  </Badge>
+                </div>
+                
+                <p className="text-xs text-gray-500 text-center">
+                  {formData.raioAtendimento < 50 
+                    ? 'Ideal para atendimento local' 
+                    : formData.raioAtendimento < 150 
+                      ? 'Boa área de cobertura regional' 
+                      : 'Cobertura estadual'}
+                </p>
+              </div>
+            </div>
+
+            <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-amber-800">Área de Atendimento</p>
-                    <p className="text-sm text-amber-700 mt-1">
-                      Você poderá definir o raio de atendimento no seu perfil. Clientes dentro dessa área verão suas propostas.
+                    <p className="text-sm font-medium text-blue-800">Dica</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Clientes dentro do seu raio de atendimento terão prioridade nas buscas. 
+                      Um raio maior aumenta suas chances, mas considere seus custos de deslocamento.
                     </p>
                   </div>
                 </div>
@@ -660,7 +705,8 @@ export default function CadastroProfissionalPage() {
 
             {/* Capacidade */}
             <div>
-              <Label className="text-base font-semibold mb-4 block">Capacidade de Atendimento</Label>
+              <Label className="text-base font-semibold mb-2 block">Capacidade de Atendimento</Label>
+              <p className="text-sm text-gray-500 mb-4">Selecione uma ou mais opções de público que você atende</p>
               <div className="flex flex-wrap gap-3">
                 {capacidade.map((cap) => (
                   <button
@@ -677,6 +723,11 @@ export default function CadastroProfissionalPage() {
                   </button>
                 ))}
               </div>
+              {formData.capacidade.length > 0 && (
+                <p className="text-sm text-amber-600 mt-2">
+                  {formData.capacidade.length} opção(ões) selecionada(s)
+                </p>
+              )}
             </div>
 
             {/* Serviços Adicionais */}
