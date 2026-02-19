@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { 
@@ -79,6 +79,14 @@ export default function CadastroProfissionalPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const isOAuth = status === 'authenticated' && !!session?.user?.email;
+  
+  // Log quando a página carrega
+  useEffect(() => {
+    console.log('🔍 Cadastro Profissional - Status da sessão:', status);
+    console.log('🔍 Cadastro Profissional - Session:', session);
+    console.log('🔍 Cadastro Profissional - isOAuth:', isOAuth);
+    console.log('🔍 Cadastro Profissional - User email:', session?.user?.email);
+  }, [status, session, isOAuth]);
 
   const [step, setStep] = useState(1);
   const [tipoPessoa, setTipoPessoa] = useState<'pf' | 'pj' | null>(null);
