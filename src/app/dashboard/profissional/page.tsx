@@ -120,6 +120,12 @@ export default function DashboardProfissionalPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/');
+  };
+
   const handleEnviarOrcamento = (evento: Evento) => {
     setEventoSelecionado(evento);
     setModalAberto(true);
@@ -206,6 +212,15 @@ export default function DashboardProfissionalPage() {
                 <Briefcase className="w-4 h-4" />
                 <span>Plano Profissional</span>
               </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleLogout}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
                 {user?.name?.charAt(0) || 'P'}
               </div>
