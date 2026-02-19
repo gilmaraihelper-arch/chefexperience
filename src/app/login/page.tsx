@@ -45,6 +45,7 @@ export default function LoginPage() {
 
   // Verificar se usuário já está logado
   useEffect(() => {
+    console.log("Login page - session status:", status, "user:", session?.user?.email);
     if (status === 'authenticated' && session?.user) {
       // Se não tem tipo definido, vai para completar cadastro
       if (!session.user.type) {
@@ -83,15 +84,19 @@ export default function LoginPage() {
   };
 
   const handleSocialLogin = async (provider: string) => {
+    console.log("handleSocialLogin called for:", provider);
     setLoading(true);
     setError('');
     
     try {
+      console.log("Calling signIn with:", provider);
       // Usar redirect: true para garantir que a sessão seja estabelecida
-      await signIn(provider, {
+      const result = await signIn(provider, {
         callbackUrl: '/completar-cadastro',
       });
+      console.log("signIn result:", result);
     } catch (err) {
+      console.error("signIn error:", err);
       setError('Erro ao conectar com ' + provider);
       setLoading(false);
     }
