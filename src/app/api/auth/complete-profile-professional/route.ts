@@ -9,6 +9,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
+    console.log("📝 Complete profile professional - session:", { 
+      hasSession: !!session, 
+      hasEmail: !!session?.user?.email 
+    });
+    
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Não autorizado' },
@@ -17,8 +22,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log("📝 Complete profile professional - body:", body);
+    
     const { 
-      type, 
       personType, 
       cpf, 
       cnpj, 
@@ -28,8 +34,7 @@ export async function POST(request: NextRequest) {
       number, 
       neighborhood, 
       city, 
-      state,
-      description 
+      state
     } = body;
 
     // Buscar usuário pelo email
@@ -46,11 +51,11 @@ export async function POST(request: NextRequest) {
     
     const userId = users[0].id;
     
-    // Atualizar usuário
+    // Atualizar usuário - simplified
     const updatedUsers = await prisma.$queryRaw`
       UPDATE "User"
       SET 
-        type = ${type}::"UserType",
+        type = 'PROFESSIONAL'::"UserType",
         "personType" = ${personType}::"PersonType",
         cpf = ${cpf || null},
         cnpj = ${cnpj || null},
@@ -73,27 +78,6 @@ export async function POST(request: NextRequest) {
         { error: 'Erro ao atualizar usuário' },
         { status: 500 }
       );
-    }
-
-    // Criar perfil de profissional
-    try {
-      await prisma.$queryRaw`
-        INSERT INTO "ProfessionalProfile" (
-          id, "userId", description, "createdAt", "updatedAt"
-        )
-        VALUES (
-          gen_random_uuid(), 
-          ${userId}, 
-          ${description || ''}, 
-          NOW(), 
-          NOW()
-        )
-        ON CONFLICT ("userId") DO UPDATE SET
-          description = ${description || ''},
-          "updatedAt" = NOW()
-      `;
-    } catch (profileError) {
-      console.log('Erro ao criar perfil profissional:', profileError);
     }
 
     return NextResponse.json({
