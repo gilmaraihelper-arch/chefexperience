@@ -314,9 +314,9 @@ export default function CadastroProfissionalPage() {
       await updateSession();
       
       // Pequeno delay para mostrar mensagem de sucesso
-      console.log('🔄 Redirecionando para home em 1.5s...');
+      console.log('🔄 Redirecionando para dashboard profissional em 1.5s...');
       setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard/profissional');
         router.refresh();
       }, 1500);
       
