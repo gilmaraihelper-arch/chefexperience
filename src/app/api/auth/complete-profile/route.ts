@@ -34,7 +34,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualizar usuário usando queryRaw para evitar problemas de schema
+    // Atualizar usuário usando queryRaw - buscar pelo email que é mais confiável
+    const userEmail = session.user.email || body.email;
+    
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: 'Email não encontrado na sessão' },
+        { status: 400 }
+      );
+    }
+    
+    // Primeiro, buscar o usuário pelo email
+    const users = await prisma.$queryRaw`
+      SELECT id, email FROM "User" WHERE email = ${userEmail} LIMIT 1
+    `;
+    
+    if (!Array.isArray(users) || users.length === 0) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
+      );
+    }
+    
+    const userId = users[0].id;
+    
+    // Agora atualizar pelo ID encontrado
     const updatedUsers = await prisma.$queryRaw`
       UPDATE "User"
       SET 
@@ -49,7 +73,7 @@ export async function POST(request: NextRequest) {
         state = ${state},
         "personType" = 'PF'::"PersonType",
         "updatedAt" = NOW()
-      WHERE id = ${session.user.id}
+      WHERE id = ${userId}
       RETURNING id, email, name, type
     `;
 
@@ -57,8 +81,8 @@ export async function POST(request: NextRequest) {
 
     if (!updatedUser) {
       return NextResponse.json(
-        { error: 'Usuário não encontrado' },
-        { status: 404 }
+        { error: 'Erro ao atualizar usuário' },
+        { status: 500 }
       );
     }
 
@@ -67,7 +91,7 @@ export async function POST(request: NextRequest) {
       try {
         await prisma.$queryRaw`
           INSERT INTO "ClientProfile" (id, "userId", "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${updatedUser.id}, NOW(), NOW())
+          VALUES (gen_random_uuid(), ${userId}, NOW(), NOW())
           ON CONFLICT ("userId") DO NOTHING
         `;
       } catch (profileError) {
