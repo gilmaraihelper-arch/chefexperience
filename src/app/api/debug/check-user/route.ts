@@ -13,9 +13,6 @@ export async function GET(request: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
-      include: {
-        accounts: true,
-      }
     });
     
     if (!user) {
@@ -25,6 +22,11 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    // Buscar accounts separadamente
+    const accounts = await prisma.account.findMany({
+      where: { userId: user.id },
+    });
+    
     return NextResponse.json({
       exists: true,
       user: {
@@ -33,8 +35,8 @@ export async function GET(request: NextRequest) {
         name: user.name,
         type: user.type,
         hasPassword: !!user.password,
-        accountsCount: user.accounts.length,
-        accounts: user.accounts.map(a => ({
+        accountsCount: accounts.length,
+        accounts: accounts.map(a => ({
           provider: a.provider,
           providerAccountId: a.providerAccountId?.substring(0, 10) + '...',
         }))
