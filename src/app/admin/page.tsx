@@ -1124,6 +1124,22 @@ export default function AdminDashboardPage() {
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                    onClick={handleFindTestUsers}
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Buscar Testes
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={handleDeleteTestUsers}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Deletar Testes
+                  </Button>
                   <Button variant="outline">
                     <Download className="w-4 h-4 mr-2" />
                     Exportar
@@ -1144,12 +1160,11 @@ export default function AdminDashboardPage() {
                         <TableHead>Tipo</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Cadastro</TableHead>
-                        <TableHead>Último Acesso</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user) => (
+                      {filteredUsers.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
@@ -1177,42 +1192,11 @@ export default function AdminDashboardPage() {
                           <TableCell>
                             {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                           </TableCell>
-                          <TableCell>
-                            {user.lastLoginAt
-                              ? new Date(user.lastLoginAt).toLocaleDateString('pt-BR')
-                              : 'Nunca'}
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setShowUserModal(true);
-                                }}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="ghost">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-600 hover:text-red-700"
-                                onClick={() => handleToggleUserStatus(user)}
-                              >
-                                <Lock className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
                                 onClick={() => {
                                   setSelectedUser(user);
                                   setShowUserModal(true);
