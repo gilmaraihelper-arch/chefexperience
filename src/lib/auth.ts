@@ -77,17 +77,21 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.type = (user as any).type || null; // Pode ser null para novos usuários OAuth
         token.image = (user as any).image;
       }
       
-      // Se trigger é update, recarrega do banco
-      if (trigger === 'update') {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-        });
-        if (dbUser) {
-          token.type = dbUser.type;
+      // SEMPRE buscar o type atualizado do banco
+      if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { type: true }
+          });
+          if (dbUser) {
+            token.type = dbUser.type;
+          }
+        } catch (e) {
+          console.error('Erro ao buscar tipo do usuário:', e);
         }
       }
       
