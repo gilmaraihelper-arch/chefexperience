@@ -67,7 +67,13 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
-      console.log("🔑 SignIn callback:", { provider: account?.provider, email: user.email });
+      console.log("🔑 SignIn callback:", { 
+        provider: account?.provider, 
+        email: user.email,
+        userId: user.id,
+        accountId: account?.providerAccountId,
+        hasProfile: !!profile
+      });
       
       // Permitir login social
       if (account?.provider === "google") {
