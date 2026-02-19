@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+export const dynamic = 'force-dynamic';
+
 
 // ATENÇÃO: Este endpoint é apenas para desenvolvimento/teste
 export async function POST(request: NextRequest) {

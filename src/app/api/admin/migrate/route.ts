@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+export const dynamic = 'force-dynamic';
+
 
 // POST /api/admin/migrate - Executa migração usando Prisma Client
 export async function POST(request: NextRequest) {

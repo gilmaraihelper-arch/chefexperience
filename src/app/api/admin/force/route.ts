@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+export const dynamic = 'force-dynamic';
+
 
 // GET /api/admin/force - Força usuário a ser admin e retorna status
 export async function GET(request: NextRequest) {

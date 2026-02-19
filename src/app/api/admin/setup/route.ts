@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+export const dynamic = 'force-dynamic';
+
 
 // POST /api/admin/setup - Setup inicial: tornar gilmar.aihelper@gmail.com admin
 export async function POST(request: NextRequest) {
