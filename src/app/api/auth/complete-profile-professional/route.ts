@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
       
       try {
         const newUsers = await prisma.$queryRaw`
-          INSERT INTO "User" (id, email, name, "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${session.user.email}, ${session.user.name || session.user.email.split('@')[0]}, NOW(), NOW())
+          INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
+          VALUES (gen_random_uuid(), ${session.user.email}, ${session.user.name || session.user.email.split('@')[0]}, '', NOW(), NOW())
           RETURNING id, email
         `;
         

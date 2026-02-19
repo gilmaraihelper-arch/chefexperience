@@ -108,8 +108,8 @@ export const authOptions: NextAuthOptions = {
             console.log("🆕 Criando novo usuário...");
             try {
               const newUsers = await prisma.$queryRaw`
-                INSERT INTO "User" (id, email, name, "createdAt", "updatedAt")
-                VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, NOW(), NOW())
+                INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
+                VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, '', NOW(), NOW())
                 RETURNING id, email
               `;
               console.log("🆕 Resultado da inserção:", newUsers);

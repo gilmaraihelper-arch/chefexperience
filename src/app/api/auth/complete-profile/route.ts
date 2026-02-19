@@ -49,14 +49,27 @@ export async function POST(request: NextRequest) {
       SELECT id, email FROM "User" WHERE email = ${userEmail} LIMIT 1
     `;
     
-    if (!Array.isArray(users) || users.length === 0) {
-      return NextResponse.json(
-        { error: 'Usuário não encontrado' },
-        { status: 404 }
-      );
-    }
+    let userId: string;
     
-    const userId = users[0].id;
+    if (!Array.isArray(users) || users.length === 0) {
+      // Criar usuário se não existir
+      console.log("🆕 Criando novo usuário...");
+      const newUsers = await prisma.$queryRaw`
+        INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
+        VALUES (gen_random_uuid(), ${userEmail}, ${session.user.name || userEmail.split('@')[0]}, '', NOW(), NOW())
+        RETURNING id, email
+      `;
+      
+      if (!Array.isArray(newUsers) || newUsers.length === 0) {
+        return NextResponse.json(
+          { error: 'Erro ao criar usuário' },
+          { status: 500 }
+        );
+      }
+      userId = newUsers[0].id;
+    } else {
+      userId = users[0].id;
+    }
     
     // Agora atualizar pelo ID encontrado
     const updatedUsers = await prisma.$queryRaw`
