@@ -94,7 +94,7 @@ export default function HomePage() {
                   Entrar
                 </Button>
               </Link>
-              <Link href="/cadastro/cliente">
+              <Link href="/completar-cadastro/escolher-tipo">
                 <Button 
                   className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25"
                 >
@@ -135,7 +135,7 @@ export default function HomePage() {
                     Entrar
                   </Button>
                 </Link>
-                <Link href="/cadastro/cliente">
+                <Link href="/completar-cadastro/escolher-tipo">
                   <Button 
                     className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white"
                   >
@@ -176,7 +176,7 @@ export default function HomePage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/cadastro/cliente">
+                <Link href="/completar-cadastro/escolher-tipo">
                   <Button 
                     size="lg" 
                     className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-xl shadow-amber-500/25 text-base px-8"
@@ -185,7 +185,7 @@ export default function HomePage() {
                     Quero Contratar
                   </Button>
                 </Link>
-                <Link href="/cadastro/profissional">
+                <Link href="/completar-cadastro/escolher-tipo">
                   <Button 
                     size="lg" 
                     variant="outline" 
@@ -475,7 +475,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <Link href="/cadastro/profissional">
+                <Link href="/completar-cadastro/escolher-tipo">
                   <Button 
                     size="lg" 
                     className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-xl shadow-amber-500/25"
@@ -586,7 +586,7 @@ export default function HomePage() {
             Junte-se a milhares de pessoas que já descobriram a melhor forma de conectar gastronomia e eventos.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/cadastro/cliente">
+            <Link href="/completar-cadastro/escolher-tipo">
               <Button 
                 size="lg" 
                 className="bg-white text-amber-600 hover:bg-amber-50 shadow-xl text-base px-8"
@@ -595,7 +595,7 @@ export default function HomePage() {
                 Quero Contratar
               </Button>
             </Link>
-            <Link href="/cadastro/profissional">
+            <Link href="/completar-cadastro/escolher-tipo">
               <Button 
                 size="lg" 
                 variant="outline" 

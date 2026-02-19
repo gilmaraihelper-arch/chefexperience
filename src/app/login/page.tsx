@@ -193,14 +193,8 @@ export default function LoginPage() {
           <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-gray-600">
               Não tem uma conta?{' '}
-              <a href="/cadastro/cliente" className="text-amber-600 hover:underline font-medium">
-                Cadastre-se como Cliente
-              </a>
-            </p>
-            <p className="text-sm text-gray-600">
-              Ou{' '}
-              <a href="/cadastro/profissional" className="text-amber-600 hover:underline font-medium">
-                Cadastre-se como Profissional
+              <a href="/completar-cadastro/escolher-tipo" className="text-amber-600 hover:underline font-medium">
+                Cadastre-se aqui
               </a>
             </p>
           </div>
