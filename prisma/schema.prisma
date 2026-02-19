@@ -101,8 +101,8 @@ model User {
   password      String?   // Opcional para OAuth
   phone         String?
   whatsapp      String?
-  type          UserType
-  personType    PersonType
+  type          UserType?
+  personType    PersonType?
   
   name          String
   cpf           String?
@@ -110,13 +110,13 @@ model User {
   razaoSocial   String?
   nomeFantasia  String?
   
-  cep           String
-  address       String
-  number        String
+  cep           String?
+  address       String?
+  number        String?
   complement    String?
-  neighborhood  String
-  city          String
-  state         String
+  neighborhood  String?
+  city          String?
+  state         String?
   
   latitude      Float?
   longitude     Float?
