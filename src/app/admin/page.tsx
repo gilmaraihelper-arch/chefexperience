@@ -584,6 +584,36 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Buscar usuários de teste específicos
+  const handleFindTestUsers = async () => {
+    try {
+      const res = await fetch('/api/admin/find-test-users');
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Usuários encontrados:', data);
+        
+        let message = '🔍 RESULTADO DA BUSCA:\n\n';
+        
+        data.testUsers.forEach((u: any) => {
+          if (u.found) {
+            message += `✅ ${u.email}\n   Type: ${u.type || 'NULL (incompleto)'}\n   Name: ${u.name || 'NULL'}\n\n`;
+          } else {
+            message += `❌ ${u.email} - Não encontrado\n\n`;
+          }
+        });
+        
+        if (data.allGilmarUsers?.length > 0) {
+          message += `\n📋 TODOS OS USUÁRIOS GILMAR:\n`;
+          data.allGilmarUsers.forEach((u: any) => {
+            message += `- ${u.email} | type: ${u.type || 'NULL'} | name: ${u.name || 'NULL'}\n`;
+          });
+        }
+        
+        alert(message);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar:', error);
+    }
   // Deletar usuários de teste do gmail
   const handleDeleteTestUsers = async () => {
     const testEmails = [
@@ -1092,6 +1122,14 @@ export default function AdminDashboardPage() {
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                    onClick={handleFindTestUsers}
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Buscar Testes
+                  </Button>
                   <Button
                     variant="outline"
                     className="border-red-300 text-red-600 hover:bg-red-50"
