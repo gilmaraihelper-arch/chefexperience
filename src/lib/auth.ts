@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./prisma";
+import { prisma, prismaAuth } from "./prisma";
 import bcrypt from "bcryptjs";
 
 // WORKAROUND: Forçar URL correta sem quebra de linha
@@ -10,7 +10,7 @@ const FIXED_NEXTAUTH_URL = "https://chefexperience.vercel.app";
 process.env.NEXTAUTH_URL = FIXED_NEXTAUTH_URL;
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prismaAuth) as any,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 dias
