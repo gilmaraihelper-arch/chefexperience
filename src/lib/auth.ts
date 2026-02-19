@@ -5,7 +5,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
-const nextAuthUrl = process.env.NEXTAUTH_URL?.trim();
+// WORKAROUND: Forçar URL correta sem quebra de linha
+const FIXED_NEXTAUTH_URL = "https://chefexperience.vercel.app";
+process.env.NEXTAUTH_URL = FIXED_NEXTAUTH_URL;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
