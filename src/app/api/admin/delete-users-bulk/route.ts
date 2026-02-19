@@ -29,11 +29,7 @@ export async function DELETE(request: NextRequest) {
           await prisma.professionalProfile.deleteMany({ where: { userId: user.id } }).catch(() => {});
           await prisma.event.deleteMany({ where: { clientId: user.id } }).catch(() => {});
           await prisma.proposal.deleteMany({ where: { professionalId: user.id } }).catch(() => {});
-          await prisma.review.deleteMany({ 
-            where: { 
-              OR: [{ clientId: user.id }, { professionalId: user.id }] 
-            } 
-          }).catch(() => {});
+          await prisma.review.deleteMany({ where: { reviewerId: user.id } }).catch(() => {});
           await prisma.account.deleteMany({ where: { userId: user.id } }).catch(() => {});
           await prisma.session.deleteMany({ where: { userId: user.id } }).catch(() => {});
           
