@@ -22,17 +22,7 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 // Client para NextAuth (sem adapter, compatível com @next-auth/prisma-adapter)
 const createPrismaAuthClient = () => {
-  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL
-  if (!connectionString) {
-    throw new Error('DATABASE_URL não configurado')
-  }
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: connectionString,
-      },
-    },
-  })
+  return new PrismaClient()
 }
 
 export const prismaAuth = globalForPrisma.prismaAuth ?? createPrismaAuthClient()
