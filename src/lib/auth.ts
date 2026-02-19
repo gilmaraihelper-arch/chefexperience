@@ -89,30 +89,36 @@ export const authOptions: NextAuthOptions = {
       // Para OAuth, criar/atualizar usuário no banco manualmente
       if (account?.provider === "google" && user.email) {
         try {
-          // Verificar se usuário já existe
-          let dbUser = await prisma.user.findUnique({
-            where: { email: user.email },
-          });
+          console.log("🔍 Buscando usuário:", user.email);
           
-          if (!dbUser) {
-            // Criar novo usuário
-            dbUser = await prisma.user.create({
-              data: {
-                email: user.email,
-                name: user.name || user.email.split('@')[0],
-                // type será null até completar cadastro
-              },
-            });
-            console.log("✅ Novo usuário OAuth criado:", dbUser.id);
-          } else {
+          // Verificar se usuário já existe (query mínima)
+          const existingUsers = await prisma.$queryRaw`
+            SELECT id, email FROM "User" WHERE email = ${user.email} LIMIT 1
+          `;
+          
+          let dbUser: any;
+          
+          if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+            dbUser = existingUsers[0];
             console.log("✅ Usuário OAuth já existe:", dbUser.id);
+          } else {
+            // Criar novo usuário com query raw
+            const newUsers = await prisma.$queryRaw`
+              INSERT INTO "User" (id, email, name, "createdAt", "updatedAt")
+              VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, NOW(), NOW())
+              RETURNING id, email
+            `;
+            dbUser = Array.isArray(newUsers) ? newUsers[0] : null;
+            console.log("✅ Novo usuário OAuth criado:", dbUser?.id);
           }
           
-          // Atualizar o user.id para o ID do banco
-          user.id = dbUser.id;
+          if (dbUser) {
+            // Atualizar o user.id para o ID do banco
+            user.id = dbUser.id;
+          }
         } catch (error) {
           console.error("❌ Erro ao criar/atualizar usuário OAuth:", error);
-          return false;
+          // Não retornar false, deixar continuar com o ID do Google
         }
       }
       

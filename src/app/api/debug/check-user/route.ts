@@ -11,16 +11,19 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Query raw para evitar problemas de schema
+    const users = await prisma.$queryRaw`
+      SELECT id, email, name, type FROM "User" WHERE email = ${email} LIMIT 1
+    `;
     
-    if (!user) {
+    if (!Array.isArray(users) || users.length === 0) {
       return NextResponse.json({
         exists: false,
         message: 'Usuário não existe no banco'
       });
     }
+    
+    const user = users[0];
     
     return NextResponse.json({
       exists: true,
@@ -29,7 +32,6 @@ export async function GET(request: NextRequest) {
         email: user.email,
         name: user.name,
         type: user.type,
-        hasPassword: !!user.password,
       }
     });
   } catch (error: any) {
