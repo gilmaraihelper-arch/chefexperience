@@ -34,8 +34,11 @@ export async function POST(request: NextRequest) {
       number, 
       neighborhood, 
       city, 
-      state
+      state,
+      raioAtendimento
     } = body;
+    
+    console.log("📝 Recebendo raioAtendimento:", raioAtendimento);
 
     // Buscar usuário pelo email
     console.log("🔍 Buscando usuário pelo email:", session.user.email);

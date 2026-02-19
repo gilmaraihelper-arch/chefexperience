@@ -88,37 +88,48 @@ export const authOptions: NextAuthOptions = {
       
       // Para OAuth, criar/atualizar usuário no banco manualmente
       if (account?.provider === "google" && user.email) {
+        console.log("🔍 OAuth detectado para:", user.email);
         try {
-          console.log("🔍 Buscando usuário:", user.email);
+          console.log("🔍 Buscando usuário no banco...");
           
-          // Verificar se usuário já existe (query mínima)
+          // Verificar se usuário já existe
           const existingUsers = await prisma.$queryRaw`
             SELECT id, email FROM "User" WHERE email = ${user.email} LIMIT 1
           `;
+          
+          console.log("🔍 Resultado da busca:", existingUsers);
           
           let dbUser: any;
           
           if (Array.isArray(existingUsers) && existingUsers.length > 0) {
             dbUser = existingUsers[0];
-            console.log("✅ Usuário OAuth já existe:", dbUser.id);
+            console.log("✅ Usuário já existe:", dbUser.id);
           } else {
-            // Criar novo usuário com query raw
-            const newUsers = await prisma.$queryRaw`
-              INSERT INTO "User" (id, email, name, "createdAt", "updatedAt")
-              VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, NOW(), NOW())
-              RETURNING id, email
-            `;
-            dbUser = Array.isArray(newUsers) ? newUsers[0] : null;
-            console.log("✅ Novo usuário OAuth criado:", dbUser?.id);
+            console.log("🆕 Criando novo usuário...");
+            try {
+              const newUsers = await prisma.$queryRaw`
+                INSERT INTO "User" (id, email, name, "createdAt", "updatedAt")
+                VALUES (gen_random_uuid(), ${user.email}, ${user.name || user.email.split('@')[0]}, NOW(), NOW())
+                RETURNING id, email
+              `;
+              console.log("🆕 Resultado da inserção:", newUsers);
+              dbUser = Array.isArray(newUsers) ? newUsers[0] : null;
+              console.log("✅ Novo usuário criado:", dbUser?.id);
+            } catch (insertError: any) {
+              console.error("❌ Erro na inserção:", insertError.message);
+              throw insertError;
+            }
           }
           
-          if (dbUser) {
-            // Atualizar o user.id para o ID do banco
+          if (dbUser && dbUser.id) {
+            console.log("📝 Atualizando user.id para:", dbUser.id);
             user.id = dbUser.id;
+          } else {
+            console.error("❌ dbUser inválido:", dbUser);
           }
-        } catch (error) {
-          console.error("❌ Erro ao criar/atualizar usuário OAuth:", error);
-          // Não retornar false, deixar continuar com o ID do Google
+        } catch (error: any) {
+          console.error("❌ Erro no signIn OAuth:", error.message);
+          console.error("Stack:", error.stack);
         }
       }
       
