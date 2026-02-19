@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       neighborhood, 
       city, 
       state,
-      raioAtendimento
+      raioAtendimento,
+      faixaPreco
     } = body;
     
     console.log("📝 Recebendo raioAtendimento:", raioAtendimento);

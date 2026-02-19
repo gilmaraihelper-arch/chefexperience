@@ -111,7 +111,7 @@ export default function CadastroProfissionalPage() {
     // Serviços
     tiposEvento: [] as string[],
     especialidades: [] as string[],
-    faixaPreco: '',
+    faixaPreco: [] as string[],
     capacidade: [] as string[],
     
     // Localização / Raio
@@ -282,7 +282,7 @@ export default function CadastroProfissionalPage() {
       case 3:
         return formData.cep && formData.endereco && formData.cidade && formData.estado;
       case 4:
-        return formData.tiposEvento.length > 0 && formData.especialidades.length > 0 && formData.faixaPreco;
+        return formData.tiposEvento.length > 0 && formData.especialidades.length > 0 && formData.faixaPreco.length > 0;
       case 5:
         return formData.descricao.length >= 50;
       case 6:
@@ -684,14 +684,15 @@ export default function CadastroProfissionalPage() {
 
             {/* Faixa de Preço */}
             <div>
-              <Label className="text-base font-semibold mb-4 block">Público-Alvo / Faixa de Preço *</Label>
+              <Label className="text-base font-semibold mb-2 block">Público-Alvo / Faixa de Preço *</Label>
+              <p className="text-sm text-gray-500 mb-4">Selecione uma ou mais faixas de preço que você atende</p>
               <div className="grid md:grid-cols-4 gap-4">
                 {faixasPreco.map((faixa) => (
                   <button
                     key={faixa.id}
-                    onClick={() => updateForm('faixaPreco', faixa.id)}
+                    onClick={() => toggleArray('faixaPreco', faixa.id)}
                     className={`p-4 rounded-xl border-2 transition-all duration-200 text-center ${
-                      formData.faixaPreco === faixa.id
+                      formData.faixaPreco.includes(faixa.id)
                         ? 'border-amber-500 ring-2 ring-amber-200'
                         : 'border-gray-200 hover:border-amber-300'
                     }`}
@@ -701,6 +702,11 @@ export default function CadastroProfissionalPage() {
                   </button>
                 ))}
               </div>
+              {formData.faixaPreco.length > 0 && (
+                <p className="text-sm text-amber-600 mt-2">
+                  {formData.faixaPreco.length} faixa(s) selecionada(s)
+                </p>
+              )}
             </div>
 
             {/* Capacidade */}
