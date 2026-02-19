@@ -158,7 +158,24 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.user.delete({ where: { id } });
+    // Deletar registros relacionados primeiro
+    await prisma.$transaction([
+      // Deletar sessões do NextAuth
+      prisma.nextAuthSession.deleteMany({ where: { userId: id } }),
+      // Deletar accounts do NextAuth
+      prisma.account.deleteMany({ where: { userId: id } }),
+      // Deletar notificações
+      prisma.notification.deleteMany({ where: { userId: id } }),
+      // Deletar mensagens enviadas
+      prisma.message.deleteMany({ where: { senderId: id } }),
+      prisma.message.deleteMany({ where: { receiverId: id } }),
+      // Deletar reviews
+      prisma.review.deleteMany({ where: { userId: id } }),
+      // Deletar sessões
+      prisma.session.deleteMany({ where: { userId: id } }),
+      // Deletar o usuário (ProfessionalProfile e ClientProfile são deletados via Cascade)
+      prisma.user.delete({ where: { id } }),
+    ]);
 
     return NextResponse.json({ success: true, message: 'Usuário deletado' });
   } catch (error: any) {

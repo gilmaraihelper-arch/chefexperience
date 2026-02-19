@@ -548,14 +548,21 @@ export default function AdminDashboardPage() {
 
     try {
       const res = await fetch(`/api/admin/users?id=${userId}`, { method: 'DELETE' });
+      
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
         if (selectedUser?.id === userId) {
           setShowUserModal(false);
         }
+        alert('✅ Usuário deletado com sucesso!');
+      } else {
+        const errorData = await res.json();
+        console.error('Erro da API:', errorData);
+        alert(`❌ Erro ao deletar: ${errorData.error || 'Erro desconhecido'}`);
       }
     } catch (error) {
       console.error('Erro ao deletar usuário:', error);
+      alert('❌ Erro de rede ao tentar deletar usuário');
     }
   };
 
