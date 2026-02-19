@@ -196,6 +196,9 @@ export default function CadastroProfissionalPage() {
     setError('');
 
     try {
+      console.log('📝 Submit - isOAuth:', isOAuth);
+      console.log('📝 Submit - session:', session?.user?.email);
+      
       const url = isOAuth ? '/api/auth/complete-profile-professional' : '/api/auth/register';
 
       const body = isOAuth
@@ -214,7 +217,8 @@ export default function CadastroProfissionalPage() {
             city: formData.cidade,
             state: formData.estado,
             description: formData.descricao,
-            // campos extras específicos do cadastro profissional podem ser enviados aqui se o backend suportar
+            raioAtendimento: formData.raioAtendimento,
+            faixaPreco: formData.faixaPreco,
           }
         : {
             email: formData.email,
@@ -234,6 +238,8 @@ export default function CadastroProfissionalPage() {
             description: formData.descricao,
           };
 
+      console.log('📝 Submit - body:', body);
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -241,6 +247,7 @@ export default function CadastroProfissionalPage() {
       });
 
       const data = await response.json();
+      console.log('📝 Submit - response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao criar conta');
@@ -252,7 +259,9 @@ export default function CadastroProfissionalPage() {
         router.push('/login');
       }
     } catch (err: any) {
+      console.error('📝 Submit - error:', err);
       setError(err.message);
+      alert('Erro: ' + err.message);
     } finally {
       setLoading(false);
     }
