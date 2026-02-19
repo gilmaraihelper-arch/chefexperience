@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { 
   ChefHat, 
   ArrowRight, 
@@ -76,18 +77,21 @@ const capacidade = [
 
 export default function CadastroProfissionalPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const isOAuth = status === 'authenticated' && !!session?.user?.email;
+
   const [step, setStep] = useState(1);
   const [tipoPessoa, setTipoPessoa] = useState<'pf' | 'pj' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     // Dados básicos
-    nome: '',
+    nome: session?.user?.name || '',
     razaoSocial: '',
     nomeFantasia: '',
     cpf: '',
     cnpj: '',
-    email: '',
+    email: session?.user?.email || '',
     telefone: '',
     whatsapp: '',
     
@@ -189,26 +193,48 @@ export default function CadastroProfissionalPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const url = isOAuth ? '/api/auth/complete-profile-professional' : '/api/auth/register';
+
+      const body = isOAuth
+        ? {
+            email: session?.user?.email,
+            name: formData.nome || formData.razaoSocial || session?.user?.name,
+            type: 'PROFESSIONAL',
+            personType: tipoPessoa?.toUpperCase(),
+            cpf: formData.cpf || null,
+            cnpj: formData.cnpj || null,
+            phone: formData.telefone,
+            cep: formData.cep,
+            address: formData.endereco,
+            number: formData.numero,
+            neighborhood: formData.bairro,
+            city: formData.cidade,
+            state: formData.estado,
+            description: formData.descricao,
+            // campos extras específicos do cadastro profissional podem ser enviados aqui se o backend suportar
+          }
+        : {
+            email: formData.email,
+            password: formData.senha || 'senha123',
+            name: formData.nome || formData.razaoSocial,
+            type: 'PROFESSIONAL',
+            personType: tipoPessoa?.toUpperCase(),
+            cpf: formData.cpf || null,
+            cnpj: formData.cnpj || null,
+            phone: formData.telefone,
+            cep: formData.cep,
+            address: formData.endereco,
+            number: formData.numero,
+            neighborhood: formData.bairro,
+            city: formData.cidade,
+            state: formData.estado,
+            description: formData.descricao,
+          };
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.senha || 'senha123',
-          name: formData.nome || formData.razaoSocial,
-          type: 'PROFESSIONAL',
-          personType: tipoPessoa?.toUpperCase(),
-          cpf: formData.cpf || null,
-          cnpj: formData.cnpj || null,
-          phone: formData.telefone,
-          cep: formData.cep,
-          address: formData.endereco,
-          number: formData.numero,
-          neighborhood: formData.bairro,
-          city: formData.cidade,
-          state: formData.estado,
-          description: formData.descricao,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
@@ -217,7 +243,11 @@ export default function CadastroProfissionalPage() {
         throw new Error(data.error || 'Erro ao criar conta');
       }
 
-      router.push('/login');
+      if (isOAuth) {
+        router.push('/');
+      } else {
+        router.push('/login');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -231,11 +261,21 @@ export default function CadastroProfissionalPage() {
         return tipoPessoa !== null;
       case 2:
         if (tipoPessoa === 'pf') {
-          return formData.nome && formData.cpf && formData.email && formData.telefone && 
-                 formData.senha.length >= 6 && formData.senha === formData.confirmarSenha;
+          const baseValid = formData.nome && formData.cpf && formData.email && formData.telefone;
+          if (isOAuth) return baseValid;
+          return (
+            baseValid &&
+            formData.senha.length >= 6 &&
+            formData.senha === formData.confirmarSenha
+          );
         }
-        return formData.razaoSocial && formData.cnpj && formData.email && formData.telefone &&
-               formData.senha.length >= 6 && formData.senha === formData.confirmarSenha;
+        const baseValidPJ = formData.razaoSocial && formData.cnpj && formData.email && formData.telefone;
+        if (isOAuth) return baseValidPJ;
+        return (
+          baseValidPJ &&
+          formData.senha.length >= 6 &&
+          formData.senha === formData.confirmarSenha
+        );
       case 3:
         return formData.cep && formData.endereco && formData.cidade && formData.estado;
       case 4:
@@ -383,8 +423,14 @@ export default function CadastroProfissionalPage() {
                     onChange={(e) => updateForm('email', e.target.value)}
                     placeholder="seu@email.com"
                     className="pl-10"
+                    disabled={isOAuth}
                   />
                 </div>
+                {isOAuth && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    E-mail preenchido automaticamente a partir da sua conta de login.
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="telefone">Telefone *</Label>
@@ -413,29 +459,33 @@ export default function CadastroProfissionalPage() {
                 </div>
               </div>
               
-              <div>
-                <Label htmlFor="senha">Senha *</Label>
-                <Input
-                  id="senha"
-                  type="password"
-                  value={formData.senha}
-                  onChange={(e) => updateForm('senha', e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                  className="mt-1"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
-                <Input
-                  id="confirmarSenha"
-                  type="password"
-                  value={formData.confirmarSenha}
-                  onChange={(e) => updateForm('confirmarSenha', e.target.value)}
-                  placeholder="Digite a senha novamente"
-                  className="mt-1"
-                />
-              </div>
+              {!isOAuth && (
+                <>
+                  <div>
+                    <Label htmlFor="senha">Senha *</Label>
+                    <Input
+                      id="senha"
+                      type="password"
+                      value={formData.senha}
+                      onChange={(e) => updateForm('senha', e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
+                    <Input
+                      id="confirmarSenha"
+                      type="password"
+                      value={formData.confirmarSenha}
+                      onChange={(e) => updateForm('confirmarSenha', e.target.value)}
+                      placeholder="Digite a senha novamente"
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         );
@@ -1031,6 +1081,12 @@ export default function CadastroProfissionalPage() {
                 </Button>
               )}
             </div>
+
+            {error && (
+              <p className="mt-4 text-sm text-red-600 text-center">
+                {error}
+              </p>
+            )}
           </CardContent>
         </Card>
 
