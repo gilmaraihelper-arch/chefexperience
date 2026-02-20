@@ -21,106 +21,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const meusEventos = [
-  {
-    id: 1,
-    nome: 'Casamento Ana e Pedro',
-    tipo: 'Casamento',
-    data: '2026-03-15',
-    pessoas: 150,
-    status: 'propostas',
-    propostas: 5,
-    imagem: '/evento-casamento.jpg',
-  },
-  {
-    id: 2,
-    nome: 'Aniversário 30 anos',
-    tipo: 'Aniversário',
-    data: '2026-02-20',
-    pessoas: 50,
-    status: 'contratado',
-    profissional: 'Chef Ricardo Mendes',
-    valor: 8500,
-    imagem: '/buffet-evento.jpg',
-  },
-  {
-    id: 3,
-    nome: 'Confraternização Empresa XYZ',
-    tipo: 'Corporativo',
-    data: '2025-12-20',
-    pessoas: 80,
-    status: 'concluido',
-    profissional: 'Buffê Gourmet Silva',
-    valor: 12000,
-    avaliado: false,
-    imagem: '/buffet-evento.jpg',
-  },
-  {
-    id: 4,
-    nome: 'Festa de Aniversário Maria',
-    tipo: 'Aniversário',
-    data: '2025-11-15',
-    pessoas: 40,
-    status: 'concluido',
-    profissional: 'Chef Maria Oliveira',
-    valor: 4500,
-    avaliado: true,
-    imagem: '/evento-casamento.jpg',
-  },
-];
-
-const propostasRecebidas = [
-  {
-    id: 1,
-    evento: 'Casamento Ana e Pedro',
-    profissional: 'Buffê Gourmet Silva',
-    avatar: 'BS',
-    valor: 18500,
-    rating: 4.8,
-    avaliacoes: 127,
-    dataEnvio: '2026-01-28',
-  },
-  {
-    id: 2,
-    evento: 'Casamento Ana e Pedro',
-    profissional: 'Chef Maria Oliveira',
-    avatar: 'MO',
-    valor: 16200,
-    rating: 4.9,
-    avaliacoes: 89,
-    dataEnvio: '2026-01-27',
-  },
-  {
-    id: 3,
-    evento: 'Casamento Ana e Pedro',
-    profissional: 'Catering Premium',
-    avatar: 'CP',
-    valor: 22000,
-    rating: 4.7,
-    avaliacoes: 203,
-    dataEnvio: '2026-01-26',
-  },
-];
-
-const profissionaisFavoritos = [
-  {
-    id: 1,
-    nome: 'Chef Ricardo Mendes',
-    especialidade: 'Coz Francesa & Italiana',
-    rating: 4.9,
-    avaliacoes: 127,
-    foto: '/chef-profissional.jpg',
-  },
-  {
-    id: 2,
-    nome: 'Buffê Gourmet Silva',
-    especialidade: 'Buffet & Eventos',
-    rating: 4.8,
-    avaliacoes: 203,
-    foto: '/buffet-evento.jpg',
-  },
-];
-
 export default function DashboardClientePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -128,6 +28,11 @@ export default function DashboardClientePage() {
   const [eventos, setEventos] = useState<any[]>([]);
   const [loadingEventos, setLoadingEventos] = useState(true);
   
+  // Empty arrays - data comes from API
+  const meusEventos: any[] = [];
+  const propostasRecebidas: any[] = [];
+  const profissionaisFavoritos: any[] = [];
+
   // Track auth state from localStorage
   const [userData, setUserData] = useState<any>({});
   const [hasToken, setHasToken] = useState(false);
