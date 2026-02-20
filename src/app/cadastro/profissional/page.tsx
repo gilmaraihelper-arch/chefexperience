@@ -439,7 +439,7 @@ export default function CadastroProfissionalPage() {
                 <p className="text-gray-600">Chef independente, cozinheiro autônomo ou profissional liberal</p>
                 <div className="mt-4 flex items-center gap-2 text-sm text-amber-600">
                   <CheckCircle2 className={`w-5 h-5 transition-opacity ${tipoPessoa === 'pf' ? 'opacity-100' : 'opacity-0'}`} />
-                  <span>Selecionado</span>
+                  <span className={tipoPessoa === 'pf' ? 'opacity-100' : 'opacity-0'}>Selecionado</span>
                 </div>
               </button>
 
@@ -458,7 +458,7 @@ export default function CadastroProfissionalPage() {
                 <p className="text-gray-600">Empresa de buffet, restaurante, casa de festas ou catering</p>
                 <div className="mt-4 flex items-center gap-2 text-sm text-amber-600">
                   <CheckCircle2 className={`w-5 h-5 transition-opacity ${tipoPessoa === 'pj' ? 'opacity-100' : 'opacity-0'}`} />
-                  <span>Selecionado</span>
+                  <span className={tipoPessoa === 'pj' ? 'opacity-100' : 'opacity-0'}>Selecionado</span>
                 </div>
               </button>
             </div>
