@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    console.log('Creating event for user:', user)
+
     const body = await request.json()
     const {
       name,
@@ -62,8 +64,10 @@ export async function POST(request: NextRequest) {
       where: { userId: user.userId }
     })
 
+    console.log('Client profile lookup:', { userId: user.userId, profile: clientProfile })
+
     if (!clientProfile) {
-      return NextResponse.json({ error: 'Perfil de cliente não encontrado' }, { status: 404 })
+      return NextResponse.json({ error: 'Perfil de cliente não encontrado', userId: user.userId }, { status: 404 })
     }
 
     const event = await prisma.event.create({
