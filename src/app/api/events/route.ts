@@ -23,7 +23,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, eventType, date, city, state, guestCount } = body
+    const { 
+      name, 
+      eventType, 
+      date, 
+      city, 
+      state, 
+      guestCount,
+      address,
+      billingType,
+      locationType,
+      cuisineStyles,
+      serviceTypes,
+      priceRange
+    } = body
 
     // Buscar perfil do cliente
     const clientProfile = await prisma.clientProfile.findUnique({
@@ -34,24 +47,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Perfil de cliente não encontrado', userId: user.userId }, { status: 404 })
     }
 
-    // Criar evento simplificado
+    // Criar evento com todos os campos obrigatórios
     const event = await prisma.event.create({
       data: {
         clientId: clientProfile.id,
-        name: name || 'Evento teste',
-        eventType: eventType || 'Aniversário',
+        name: name || 'Evento sem nome',
+        eventType: eventType || 'OUTROS',
         date: date ? new Date(date) : new Date(),
-        startTime: '19:00',
-        duration: 4,
-        billingType: 'por pessoa',
-        locationType: 'cliente',
+        startTime: body.startTime || '19:00',
+        duration: String(body.duration || 4),
+        billingType: billingType || 'PF',
+        locationType: locationType || 'CLIENT_ADDRESS',
+        address: address || 'Endereço não informado',
         city: city || 'Curitiba',
         state: state || 'PR',
+        hasKitchen: body.hasKitchen || false,
         guestCount: parseInt(guestCount) || 50,
-        searchRadiusKm: 50,
-        cuisineStyles: '[]',
-        serviceTypes: '[]',
-        priceRange: 'medio',
+        searchRadiusKm: parseInt(body.searchRadiusKm) || 50,
+        cuisineStyles: JSON.stringify(cuisineStyles || []),
+        serviceTypes: JSON.stringify(serviceTypes || []),
+        needsWaiter: body.needsWaiter || false,
+        needsSoftDrinks: body.needsSoftDrinks || false,
+        needsAlcoholicDrinks: body.needsAlcoholicDrinks || false,
+        needsDecoration: body.needsDecoration || false,
+        needsSoundLight: body.needsSoundLight || false,
+        needsPhotographer: body.needsPhotographer || false,
+        needsBartender: body.needsBartender || false,
+        needsSweets: body.needsSweets || false,
+        needsCake: body.needsCake || false,
+        needsPlatesCutlery: body.needsPlatesCutlery || false,
+        priceRange: priceRange || 'MEDIUM',
+        maxBudget: body.maxBudget ? parseFloat(body.maxBudget) : null,
+        description: body.description || null,
+        dietaryRestrictions: body.dietaryRestrictions || null,
+        referenceImages: '[]',
         status: 'OPEN',
       },
     })
