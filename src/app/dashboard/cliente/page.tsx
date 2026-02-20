@@ -177,7 +177,22 @@ export default function DashboardClientePage() {
       try {
         let token = localStorage.getItem('token');
         
-        // Se não tem token, buscar da API
+        // Se tem token no localStorage, verificar se é válido
+        if (token) {
+          try {
+            const tokenRes = await fetch('/api/auth/token', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!tokenRes.ok) {
+              localStorage.removeItem('token');
+              token = null;
+            }
+          } catch (e) {
+            console.log('Erro ao validar token:', e);
+          }
+        }
+        
+        // Se não tem token, buscar da API (para OAuth)
         if (!token) {
           try {
             const tokenRes = await fetch('/api/auth/token');

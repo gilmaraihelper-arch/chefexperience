@@ -241,7 +241,29 @@ export default function DashboardProfissionalPage() {
       try {
         let token = localStorage.getItem('token');
         
-        // Se não tem token, buscar da API
+        // Se tem token no localStorage, verificar se é válido usando ele mesmo
+        if (token) {
+          try {
+            // Usar o token existente para obter dados do usuário
+            const tokenRes = await fetch('/api/auth/token', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (tokenRes.ok) {
+              const tokenData = await tokenRes.json();
+              // Token válido, usar ele
+              console.log('Token válido do localStorage');
+            } else {
+              // Token expirado ou inválido, limpar
+              console.log('Token inválido, limpando...');
+              localStorage.removeItem('token');
+              token = null;
+            }
+          } catch (e) {
+            console.log('Erro ao validar token:', e);
+          }
+        }
+        
+        // Se não tem token, buscar da API (para OAuth)
         if (!token) {
           try {
             const tokenRes = await fetch('/api/auth/token');
