@@ -47,7 +47,26 @@ export async function POST(request: NextRequest) {
     })
 
     if (!professionalProfile) {
-      return NextResponse.json({ error: 'Perfil profissional não encontrado' }, { status: 404 })
+      // Criar perfil automaticamente se não existir
+      console.log("🔄 Criando perfil profissional automaticamente para:", user.userId);
+      try {
+        const newProfile = await prisma.professionalProfile.create({
+          data: {
+            userId: user.userId,
+            description: 'Perfil criado automaticamente',
+            eventTypes: '["corporativo"]',
+            cuisineStyles: '["brasileira"]',
+            serviceTypes: '["buffet"]',
+            priceRanges: '[200,500]',
+            capacity: '50',
+          }
+        });
+        console.log("✅ Perfil profissional criado automaticamente:", newProfile.id);
+        return NextResponse.json({ error: 'Perfil criado. Tente criar o pacote novamente.' }, { status: 201 });
+      } catch (profileError) {
+        console.error("❌ Erro ao criar perfil:", profileError);
+        return NextResponse.json({ error: 'Perfil profissional não encontrado' }, { status: 404 });
+      }
     }
 
     const body = await request.json()
