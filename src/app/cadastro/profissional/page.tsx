@@ -294,7 +294,9 @@ export default function CadastroProfissionalPage() {
         
         // Descrição
         description: formData.descricao,
-        
+        differentials: formData.diferenciais,
+        experience: formData.experiencia,
+
         // Serviços e configurações
         raioAtendimento: formData.raioAtendimento,
         faixaPreco: formData.faixaPreco,

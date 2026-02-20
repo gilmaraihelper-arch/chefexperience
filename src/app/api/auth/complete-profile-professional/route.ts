@@ -154,6 +154,15 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ ProfessionalProfile criado/atualizado:", profile.id);
 
+    // Verificar se o profile realmente existe no banco
+    if (!profile || !profile.id) {
+      console.error("❌ Profile não foi criado corretamente");
+      return NextResponse.json(
+        { error: 'Erro ao salvar perfil no banco de dados' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       user: {

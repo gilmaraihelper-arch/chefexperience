@@ -36,7 +36,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 
-const eventosDisponiveis = [
+// API data only - no hardcoded fallback
   {
     id: 1,
     cliente: 'Ana Carolina Silva',
@@ -144,34 +144,7 @@ const eventosContratados = [
   },
 ];
 
-const pacotesPreDefinidos = [
-  {
-    id: 1,
-    nome: 'Casamento Premium',
-    descricao: 'Buffet completo para casamentos com até 150 pessoas',
-    precoBase: 80,
-    pessoasMin: 50,
-    pessoasMax: 150,
-    inclui: ['Entradas', 'Prato Principal', 'Sobremesa', 'Bebidas', 'Garçom', 'Decoração da Mesa'],
-    ativo: true,
-  },
-  {
-    id: 2,
-    nome: 'Churrasco Executivo',
-    descricao: 'Churrasco completo com variedade de carnes e acompanhamentos',
-    precoBase: 65,
-    pessoasMin: 30,
-    pessoasMax: 100,
-    inclui: ['Carnes', 'Acompanhamentos', 'Bebidas', 'Churrasqueiro', 'Utensílios'],
-    ativo: true,
-  },
-  {
-    id: 3,
-    nome: 'Coffee Break Corporativo',
-    descricao: 'Perfeito para reuniões e eventos empresariais',
-    precoBase: 35,
-    pessoasMin: 10,
-    pessoasMax: 200,
+// API data only - no hardcoded fallback
     inclui: ['Cafés', 'Salgados', 'Doces', 'Sucos', 'Montagem'],
     ativo: false,
   },
@@ -557,7 +530,7 @@ export default function DashboardProfissionalPage() {
                   <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : (
-                (eventosAPI.length > 0 ? eventosAPI : eventosDisponiveis).map((evento: any) => (
+                eventosAPI.map((evento: any) => (
                 <Card key={evento.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -732,7 +705,7 @@ export default function DashboardProfissionalPage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(pacotesAPI.length > 0 ? pacotesAPI : pacotesPreDefinidos).map((pacote: any) => (
+              {pacotesAPI.map((pacote: any) => (
                 <Card key={pacote.id} className={`hover:shadow-lg transition-shadow ${!pacote.isActive && pacote.ativo !== undefined && !pacote.ativo ? 'opacity-60' : ''}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
@@ -1026,7 +999,7 @@ export default function DashboardProfissionalPage() {
                 <div>
                   <Label>Selecione o pacote</Label>
                   <div className="grid gap-2 mt-2">
-                    {(pacotesAPI.length > 0 ? pacotesAPI.filter((p: any) => p.isActive) : pacotesPreDefinidos.filter(p => p.ativo)).map((pacote: any) => (
+                    {pacotesAPI.filter((p: any) => p.isActive).map((pacote: any) => (
                       <button
                         key={pacote.id}
                         onClick={() => setOrcamentoData({...orcamentoData, pacoteSelecionado: pacote.id.toString()})}
@@ -1058,8 +1031,7 @@ export default function DashboardProfissionalPage() {
                 {orcamentoData.usarPacote && orcamentoData.pacoteSelecionado && eventoSelecionado && (
                   <p className="text-sm text-gray-500 mt-1">
                     Sugestão: R$ {(
-                      (pacotesAPI.length > 0 ? pacotesAPI : pacotesPreDefinidos).find((p: any) => p.id.toString() === orcamentoData.pacoteSelecionado)?.basePrice || 
-                      pacotesPreDefinidos.find(p => p.id.toString() === orcamentoData.pacoteSelecionado)?.precoBase || 0
+                      pacotesAPI.find((p: any) => p.id.toString() === orcamentoData.pacoteSelecionado)?.basePrice || 0
                     ) * (eventoSelecionado.guestCount || eventoSelecionado.pessoas)}
                   </p>
                 )}
