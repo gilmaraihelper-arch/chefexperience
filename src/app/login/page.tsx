@@ -92,7 +92,7 @@ export default function LoginPage() {
       console.log("Calling signIn with:", provider);
       // Usar redirect: true para garantir que a sessão seja estabelecida
       const result = await signIn(provider, {
-        callbackUrl: '/completar-cadastro',
+        callbackUrl: '/api/auth/oauth-callback',
       });
       console.log("signIn result:", result);
     } catch (err) {

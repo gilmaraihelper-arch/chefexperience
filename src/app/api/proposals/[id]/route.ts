@@ -85,6 +85,40 @@ export async function PUT(
         }),
       ])
 
+      // Notificar profissional que a proposta foi aceita
+      try {
+        const professional = await prisma.professionalProfile.findUnique({
+          where: { id: proposal.professionalId },
+          include: { user: true }
+        });
+
+        if (professional?.user) {
+          const { sendEmail, emailTemplates } = await import('@/lib/email');
+          
+          const client = await prisma.user.findUnique({
+            where: { id: user.userId }
+          });
+          
+          const template = emailTemplates.proposalAccepted({
+            professionalName: professional.user.name,
+            clientName: client?.name || 'Cliente',
+            eventTitle: proposal.event.name,
+            proposalValue: proposal.totalPrice,
+            eventId: proposal.eventId
+          });
+          
+          await sendEmail({
+            to: professional.user.email,
+            subject: template.subject,
+            html: template.html
+          });
+          
+          console.log('📧 Email de proposta aceita enviado para:', professional.user.email);
+        }
+      } catch (notifyError) {
+        console.error('Erro ao notificar profissional:', notifyError);
+      }
+
       return NextResponse.json({ success: true, message: 'Proposta aceita!' })
     } else if (action === 'reject') {
       // Recusar proposta

@@ -19,36 +19,61 @@ function getUserFromToken(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = getUserFromToken(request)
-    if (!user || user.type !== 'CLIENT') {
-      return NextResponse.json({ error: 'Apenas clientes podem avaliar' }, { status: 403 })
+    if (!user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     const body = await request.json()
     const {
-      professionalId,
+      targetId, // professionalId ou clientId
       eventId,
-      foodQuality,
-      serviceQuality,
-      punctuality,
-      communication,
-      valueForMoney,
-      overall,
+      rating,
       comment,
+      type // 'CLIENT_TO_PROFESSIONAL' ou 'PROFESSIONAL_TO_CLIENT'
     } = body
 
-    // Verificar se o evento foi realizado e contratado
-    const event = await prisma.event.findFirst({
-      where: {
-        id: eventId,
-        status: 'COMPLETED',
-        hiredProposal: {
-          professionalId: professionalId
-        }
+    // Verificar se o evento existe e está concluído
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        hiredProposal: true,
+        client: true
       }
     })
 
     if (!event) {
-      return NextResponse.json({ error: 'Evento não encontrado ou não concluído' }, { status: 404 })
+      return NextResponse.json({ error: 'Evento não encontrado' }, { status: 404 })
+    }
+
+    if (event.status !== 'COMPLETED' && event.status !== 'CLOSED') {
+      return NextResponse.json({ error: 'Evento ainda não foi concluído' }, { status: 400 })
+    }
+
+    // Validar permissões baseado no tipo de avaliação
+    if (type === 'CLIENT_TO_PROFESSIONAL') {
+      if (user.type !== 'CLIENT') {
+        return NextResponse.json({ error: 'Apenas clientes podem avaliar profissionais' }, { status: 403 })
+      }
+      if (event.client?.userId !== user.userId) {
+        return NextResponse.json({ error: 'Você não pode avaliar este evento' }, { status: 403 })
+      }
+      if (event.hiredProposal?.professionalId !== targetId) {
+        return NextResponse.json({ error: 'Profissional não contratado para este evento' }, { status: 400 })
+      }
+    } else if (type === 'PROFESSIONAL_TO_CLIENT') {
+      if (user.type !== 'PROFESSIONAL') {
+        return NextResponse.json({ error: 'Apenas profissionais podem avaliar clientes' }, { status: 403 })
+      }
+      // Verificar se o profissional foi o contratado
+      const professionalProfile = await prisma.professionalProfile.findUnique({
+        where: { userId: user.userId }
+      })
+      if (!professionalProfile || event.hiredProposal?.professionalId !== professionalProfile.id) {
+        return NextResponse.json({ error: 'Você não foi contratado para este evento' }, { status: 403 })
+      }
+      if (event.client?.userId !== targetId) {
+        return NextResponse.json({ error: 'Cliente inválido' }, { status: 400 })
+      }
     }
 
     // Verificar se já avaliou
@@ -65,35 +90,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Você já avaliou este evento' }, { status: 409 })
     }
 
+    // Criar avaliação
     const review = await prisma.review.create({
       data: {
         reviewerId: user.userId,
-        professionalId,
+        professionalId: type === 'CLIENT_TO_PROFESSIONAL' ? targetId : null,
+        clientId: type === 'PROFESSIONAL_TO_CLIENT' ? targetId : null,
         eventId,
-        foodQuality,
-        serviceQuality,
-        punctuality,
-        communication,
-        valueForMoney,
-        overall,
+        overall: rating,
+        foodQuality: rating,
+        serviceQuality: rating,
+        punctuality: rating,
+        communication: rating,
+        valueForMoney: rating,
         comment,
+        isPublic: true,
       },
     })
 
-    // Atualizar rating do profissional
-    const allReviews = await prisma.review.findMany({
-      where: { professionalId }
-    })
+    // Se avaliação de profissional, atualizar rating
+    if (type === 'CLIENT_TO_PROFESSIONAL') {
+      const allReviews = await prisma.review.findMany({
+        where: { professionalId: targetId }
+      })
 
-    const avgRating = allReviews.reduce((sum, r) => sum + r.overall, 0) / allReviews.length
+      if (allReviews.length > 0) {
+        const avgRating = allReviews.reduce((sum, r) => sum + r.overall, 0) / allReviews.length
 
-    await prisma.professionalProfile.update({
-      where: { id: professionalId },
-      data: {
-        rating: avgRating,
-        reviewCount: allReviews.length,
-      },
-    })
+        await prisma.professionalProfile.update({
+          where: { id: targetId },
+          data: {
+            rating: avgRating,
+            reviewCount: allReviews.length,
+          },
+        })
+      }
+    }
+
+    // Se avaliação de cliente, salvar no clientProfile
+    if (type === 'PROFESSIONAL_TO_CLIENT') {
+      const clientReviews = await prisma.review.findMany({
+        where: { clientId: targetId }
+      })
+
+      if (clientReviews.length > 0) {
+        const avgRating = clientReviews.reduce((sum, r) => sum + r.overall, 0) / clientReviews.length
+
+        await prisma.clientProfile.update({
+          where: { id: targetId },
+          data: {
+            rating: avgRating,
+          },
+        })
+      }
+    }
 
     return NextResponse.json({ success: true, review })
   } catch (error) {
@@ -102,18 +152,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Listar avaliações de um profissional
+// Listar avaliações
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const professionalId = searchParams.get('professionalId')
+    const clientId = searchParams.get('clientId')
 
-    if (!professionalId) {
-      return NextResponse.json({ error: 'professionalId obrigatório' }, { status: 400 })
+    let whereClause: any = { isPublic: true }
+    
+    if (professionalId) {
+      whereClause.professionalId = professionalId
+    }
+    if (clientId) {
+      whereClause.clientId = clientId
+    }
+
+    if (!professionalId && !clientId) {
+      return NextResponse.json({ error: 'professionalId ou clientId obrigatório' }, { status: 400 })
     }
 
     const reviews = await prisma.review.findMany({
-      where: { professionalId, isPublic: true },
+      where: whereClause,
       include: {
         reviewer: {
           select: { name: true }

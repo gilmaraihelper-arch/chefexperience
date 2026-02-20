@@ -157,8 +157,10 @@ model ClientProfile {
   
   totalEvents     Int @default(0)
   totalSpent      Float @default(0)
+  rating          Float @default(0)
   
   events    Event[]
+  reviews   Review[] @relation("ClientReviews")
 }
 
 // ============================================
@@ -360,8 +362,13 @@ model Review {
   reviewerId      String
   reviewer        User @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
   
-  professionalId  String
-  professional    ProfessionalProfile @relation("ProfessionalReviews", fields: [professionalId], references: [id], onDelete: Cascade)
+  // Avaliação do cliente sobre o profissional
+  professionalId  String?
+  professional    ProfessionalProfile? @relation("ProfessionalReviews", fields: [professionalId], references: [id], onDelete: Cascade)
+  
+  // Avaliação do profissional sobre o cliente
+  clientId        String?
+  client          ClientProfile? @relation("ClientReviews", fields: [clientId], references: [id], onDelete: Cascade)
   
   eventId         String
   

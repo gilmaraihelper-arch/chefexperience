@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { 
@@ -195,11 +195,29 @@ const faixaPrecoLabels: Record<string, string> = {
 
 export default function DashboardProfissionalPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
   // Pegar nome do usuário da sessão
   const userName = session?.user?.name || 'Chef';
-  const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   const [abaAtiva, setAbaAtiva] = useState('disponiveis');
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false);

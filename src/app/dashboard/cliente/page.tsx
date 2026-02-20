@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { 
   ChefHat, 
   Calendar, 
@@ -122,7 +123,26 @@ const profissionaisFavoritos = [
 
 export default function DashboardClientePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [abaAtiva, setAbaAtiva] = useState('eventos');
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30">
@@ -149,7 +169,7 @@ export default function DashboardClientePage() {
                 Novo Evento
               </Button>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                AS
+                {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
               </div>
               <Button variant="ghost" size="sm" onClick={() => router.push('/logout')}>
                 <LogOut className="w-4 h-4" />
@@ -163,7 +183,9 @@ export default function DashboardClientePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Olá, Ana! 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Olá, {session?.user?.name || 'Cliente'}! 👋
+          </h1>
           <p className="text-gray-600">Bem-vinda ao seu dashboard</p>
         </div>
 

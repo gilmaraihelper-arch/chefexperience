@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { UserType, PersonType } from '@prisma/client'
+import { checkRateLimit, getClientIP } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const clientIP = getClientIP(request);
+    if (!checkRateLimit(clientIP)) {
+      return NextResponse.json(
+        { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const {
       email,
@@ -89,6 +99,26 @@ export async function POST(request: NextRequest) {
           capacity: '[]',
         },
       })
+    }
+
+    // Enviar email de boas-vindas
+    try {
+      const { sendEmail, emailTemplates } = await import('@/lib/email');
+      
+      const template = emailTemplates.welcome({
+        name: user.name,
+        type: user.type as 'CLIENT' | 'PROFESSIONAL'
+      });
+      
+      await sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html
+      });
+      
+      console.log('📧 Email de boas-vindas enviado para:', user.email);
+    } catch (emailError) {
+      console.error('Erro ao enviar email de boas-vindas:', emailError);
     }
 
     return NextResponse.json({

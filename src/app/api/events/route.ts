@@ -102,6 +102,92 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Após criar o evento, notificar profissionais com match >= 80%
+    try {
+      // Buscar profissionais com match >= 80%
+      const professionals = await prisma.professionalProfile.findMany({
+        include: {
+          user: {
+            select: { name: true, email: true }
+          }
+        }
+      });
+
+      // Calcular matches
+      const eventData = { ...body, guestCount: parseInt(guestCount), city };
+      const matchedProfess = professionals.map(prof => {
+        // Função simplificada de match (replicada aqui para evitar import circular)
+        let score = 0;
+        
+        // Match por estilo culinário
+        if (cuisineStyles && prof.cuisineStyles) {
+          const eventStyles = cuisineStyles;
+          const profStyles = JSON.parse(prof.cuisineStyles);
+          const matches = eventStyles.filter((s: string) => profStyles.includes(s));
+          if (matches.length > 0) score += 20;
+        }
+        
+        // Match por tipo de evento
+        if (eventType && prof.eventTypes) {
+          const profTypes = JSON.parse(prof.eventTypes);
+          if (profTypes.includes(eventType)) score += 15;
+        }
+        
+        // Match por capacidade
+        if (guestCount && prof.capacity) {
+          const capacities = JSON.parse(prof.capacity);
+          if (Math.max(...capacities) >= parseInt(guestCount)) score += 15;
+        }
+        
+        // Match por orçamento
+        if (maxBudget && prof.priceRanges) {
+          const budget = parseFloat(maxBudget);
+          const ranges = JSON.parse(prof.priceRanges);
+          for (const range of ranges) {
+            const [min, max] = range.split('-').map((s: string) => parseInt(s.replace(/[^0-9]/g, '')));
+            if (budget >= min && budget <= max) {
+              score += 20;
+              break;
+            }
+          }
+        }
+        
+        // Match por rating
+        if (prof.rating) {
+          score += (prof.rating / 5) * 15;
+        }
+        
+        return { professional: prof, score };
+      }).filter(m => m.score >= 80).sort((a, b) => b.score - a.score);
+
+      // Enviar emails para profissionais com match >= 80%
+      if (matchedProfess.length > 0) {
+        const { sendEmail, emailTemplates } = await import('@/lib/email');
+        
+        for (const match of matchedProfess.slice(0, 5)) { // Max 5 profissionais
+          const template = emailTemplates.newEvent({
+            professionalName: match.professional.user.name,
+            eventTitle: name,
+            eventType,
+            guestCount: parseInt(guestCount),
+            eventDate: date,
+            eventId: event.id
+          });
+          
+          await sendEmail({
+            to: match.professional.user.email,
+            subject: template.subject,
+            html: template.html
+          });
+        }
+        
+        console.log(`📧 Notificados ${matchedProfess.length} profissionais com match >= 80%`);
+      }
+    } catch (notifyError) {
+      console.error('Erro ao notificar profissionais:', notifyError);
+      // Não falha a criação do evento se o notification falhar
+    }
+
     return NextResponse.json({ success: true, event })
   } catch (error) {
     console.error('Erro ao criar evento:', error)

@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     const { eventId, totalPrice, pricePerPerson, message } = body
 
     const professionalProfile = await prisma.professionalProfile.findUnique({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
+      include: { user: { select: { name: true, email: true } } }
     })
 
     if (!professionalProfile) {
@@ -58,6 +59,40 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Notificar cliente sobre nova proposta
+    try {
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          client: {
+            include: { user: true }
+          }
+        }
+      });
+
+      if (event?.client?.user) {
+        const { sendEmail, emailTemplates } = await import('@/lib/email');
+        
+        const template = emailTemplates.proposalReceived({
+          clientName: event.client.user.name,
+          professionalName: professionalProfile.user.name,
+          eventTitle: event.name,
+          proposalValue: parseFloat(totalPrice),
+          proposalId: proposal.id
+        });
+        
+        await sendEmail({
+          to: event.client.user.email,
+          subject: template.subject,
+          html: template.html
+        });
+        
+        console.log('📧 Email de nova proposta enviado para:', event.client.user.email);
+      }
+    } catch (notifyError) {
+      console.error('Erro ao notificar cliente:', notifyError);
+    }
+
     return NextResponse.json({ success: true, proposal })
   } catch (error) {
     console.error('Erro ao criar proposta:', error)
@@ -78,7 +113,8 @@ export async function GET(request: NextRequest) {
 
     if (user.type === 'PROFESSIONAL') {
       const professionalProfile = await prisma.professionalProfile.findUnique({
-        where: { userId: user.userId }
+        where: { userId: user.userId },
+        include: { user: { select: { name: true, email: true } } }
       })
 
       if (!professionalProfile) {

@@ -82,6 +82,9 @@ export default function HomePage() {
               <button onClick={() => scrollToSection('para-profissionais')} className="text-sm font-medium text-gray-600 hover:text-amber-600 transition-colors">
                 Para Profissionais
               </button>
+              <Link href="/planos" className="text-sm font-medium text-gray-600 hover:text-amber-600 transition-colors">
+                Planos e Preços
+              </Link>
             </div>
 
             {/* CTA Buttons */}
