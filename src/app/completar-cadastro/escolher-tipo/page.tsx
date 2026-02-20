@@ -36,8 +36,23 @@ export default function EscolherTipoPage() {
         // Remover token da URL
         window.history.replaceState({}, '', '/completar-cadastro/escolher-tipo');
       }
+      
+      // Verificar se usuário já tem tipo definido e redirecionar
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          if (userData.type === 'CLIENT') {
+            router.replace('/dashboard/cliente');
+            return;
+          } else if (userData.type === 'PROFESSIONAL') {
+            router.replace('/dashboard/profissional');
+            return;
+          }
+        } catch (e) {}
+      }
     }
-  }, []);
+  }, [router]);
 
   const handleSelect = (tipo: 'cliente' | 'profissional') => {
     setLoading(tipo);
