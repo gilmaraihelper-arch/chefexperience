@@ -616,4 +616,4 @@ export default function HomePage() {
       <SiteFooter />
     </div>
   );
-}
+}// Deploy trigger Fri Feb 20 19:05:35 -03 2026
