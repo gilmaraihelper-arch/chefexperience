@@ -36,136 +36,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 
-// API data only - no hardcoded fallback
-  {
-    id: 1,
-    cliente: 'Ana Carolina Silva',
-    evento: 'Casamento Ana e Pedro',
-    tipo: 'Casamento',
-    data: '2026-03-15',
-    pessoas: 150,
-    local: 'São Paulo, SP',
-    distancia: '15 km',
-    faixaPreco: 'premium',
-    orcamentoMax: 25000,
-    match: 95,
-    estilosCulinaria: ['Italiana', 'Mediterrânea'],
-    tipoServico: ['Buffet Completo'],
-    possuiCozinha: true,
-  },
-  {
-    id: 2,
-    cliente: 'Fernanda Lima',
-    evento: 'Aniversário 40 anos',
-    tipo: 'Aniversário',
-    data: '2026-02-20',
-    pessoas: 80,
-    local: 'São Paulo, SP',
-    distancia: '8 km',
-    faixaPreco: 'luxo',
-    orcamentoMax: 15000,
-    match: 88,
-    estilosCulinaria: ['Brasileira', 'Churrasco'],
-    tipoServico: ['Churrasco'],
-    possuiCozinha: false,
-  },
-  {
-    id: 3,
-    cliente: 'Carlos Eduardo',
-    evento: 'Confraternização Empresarial',
-    tipo: 'Corporativo',
-    data: '2026-02-10',
-    pessoas: 300,
-    local: 'Barueri, SP',
-    distancia: '25 km',
-    faixaPreco: 'premium',
-    orcamentoMax: 40000,
-    match: 82,
-    estilosCulinaria: ['Internacional'],
-    tipoServico: ['Coffee Break', 'Buffet Completo'],
-    possuiCozinha: true,
-  },
-];
-
-const orcamentosEnviados = [
-  {
-    id: 1,
-    evento: 'Formatura Medicina',
-    cliente: 'João Paulo',
-    valor: 12000,
-    status: 'pendente',
-    dataEnvio: '2026-01-25',
-    dataEvento: '2026-03-20',
-    mensagem: 'Incluímos todos os equipamentos necessários e equipe completa.',
-    temArquivo: true,
-  },
-  {
-    id: 2,
-    evento: 'Bodas de Prata',
-    cliente: 'Maria Helena',
-    valor: 8500,
-    status: 'aceito',
-    dataEnvio: '2026-01-20',
-    dataEvento: '2026-02-14',
-    mensagem: 'Menu especial com pratos da culinária italiana tradicional.',
-    temArquivo: false,
-  },
-  {
-    id: 3,
-    evento: 'Festa Infantil',
-    cliente: 'Pedro Santos',
-    valor: 3500,
-    status: 'recusado',
-    dataEnvio: '2026-01-18',
-    dataEvento: '2026-02-05',
-    mensagem: 'Pacote completo com doces e salgados.',
-    temArquivo: true,
-  },
-];
-
-const eventosContratados = [
-  {
-    id: 1,
-    evento: 'Casamento Juliana e Marcos',
-    cliente: 'Juliana Costa',
-    data: '2026-02-14',
-    pessoas: 120,
-    valor: 15000,
-    status: 'confirmado',
-  },
-  {
-    id: 2,
-    evento: 'Aniversário 50 anos',
-    cliente: 'Roberto Almeida',
-    data: '2026-03-05',
-    pessoas: 60,
-    valor: 7200,
-    status: 'confirmado',
-  },
-];
-
-// API data only - no hardcoded fallback
-    inclui: ['Cafés', 'Salgados', 'Doces', 'Sucos', 'Montagem'],
-    ativo: false,
-  },
-];
-
-const eventosCalendario = [
-  { data: '2026-02-14', evento: 'Casamento Juliana e Marcos', pessoas: 120, status: 'confirmado' },
-  { data: '2026-02-20', evento: 'Aniversário Fernanda Lima', pessoas: 80, status: 'orcamento' },
-  { data: '2026-03-05', evento: 'Aniversário Roberto Almeida', pessoas: 60, status: 'confirmado' },
-  { data: '2026-03-15', evento: 'Casamento Ana e Pedro', pessoas: 150, status: 'disponivel' },
-  { data: '2026-03-20', evento: 'Formatura Medicina', pessoas: 200, status: 'orcamento' },
-];
-
-const faixaPrecoLabels: Record<string, string> = {
-  popular: 'Popular',
-  executivo: 'Executivo',
-  premium: 'Premium',
-  luxo: 'Luxo',
-  'ultra-luxo': 'Ultra Luxo',
-};
-
 export default function DashboardProfissionalPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -305,6 +175,17 @@ export default function DashboardProfissionalPage() {
   
   const userName = (session?.user?.name || userData.name || 'Chef');
   const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+  // Define missing variables that were in hardcoded data
+  const faixaPrecoLabels: Record<string, string> = {
+    'popular': 'Popular',
+    'medio': 'Médio',
+    'premium': 'Premium',
+    'luxo': 'Luxo'
+  };
+  const orcamentosEnviados: any[] = [];
+  const eventosContratados: any[] = [];
+  const eventosCalendario: any[] = [];
 
   // Track auth state from localStorage
   const [hasToken, setHasToken] = useState(false);
