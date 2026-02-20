@@ -9,16 +9,13 @@ const FIXED_NEXTAUTH_URL = "https://chefexperience.vercel.app";
 process.env.NEXTAUTH_URL = FIXED_NEXTAUTH_URL;
 
 export const authOptions: NextAuthOptions = {
-  // Adapter removido - usando JWT puro para OAuth
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 dias
-    updateAge: 0,              // ❗ Reprocessar JWT em toda request
   },
   pages: {
     signIn: "/login",
     error: "/login",
-    // newUser removido - o signIn callback redireciona manualmente
   },
   logger: {
     error: (code, metadata) => {
@@ -32,13 +29,14 @@ export const authOptions: NextAuthOptions = {
     },
   },
   providers: [
-    // Google OAuth
+    // Google OAuth - com allowDangerousEmailAccountLinking para vincular contas com mesmo email
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true, // Vincula automaticamente contas com mesmo email
     }),
     
-    // Login com email/senha (existente)
+    // Login com email/senha
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -72,169 +70,158 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           type: user.type,
-          image: (user as any).image,
         };
       },
     }),
   ],
   callbacks: {
+    // 1. signIn callback - NÃO retorna URL, só true/false
     async signIn({ user, account, profile }) {
-      console.log("========================================");
-      console.log("🔑 SIGNIN CALLBACK INICIADO");
-      console.log("========================================");
-      console.log("Provider:", account?.provider);
-      console.log("Email:", user?.email);
-      console.log("User ID original:", user?.id);
-      console.log("User name:", user?.name);
+      console.log("🔑 signIn callback:", { 
+        provider: account?.provider, 
+        email: user?.email,
+        isNewUser: user?.id 
+      });
       
-      // Para OAuth, criar/atualizar usuário no banco manualmente
+      // Para OAuth, garantir que usuário existe no banco
       if (account?.provider === "google" && user.email) {
-        console.log("✅ É Google OAuth, processando...");
-        
         try {
           const userEmail = user.email.toLowerCase();
           
-          // Verificar se usuário já existe usando Prisma
-          console.log("🔍 Verificando se usuário existe...");
+          // Verificar se usuário já existe
           let dbUser = await prisma.user.findUnique({
             where: { email: userEmail }
           });
           
-          if (dbUser) {
-            console.log("✅ Usuário JÁ EXISTE:", dbUser.id);
-            
-            // Atualizar nome se necessário
-            if (user.name && user.name !== dbUser.name) {
-              console.log("🔄 Atualizando nome do usuário...");
-              dbUser = await prisma.user.update({
-                where: { id: dbUser.id },
-                data: { name: user.name }
-              });
-              console.log("✅ Nome atualizado");
-            }
-          } else {
-            console.log("🆕 Usuário NÃO existe, criando novo...");
-            
-            const userName = user.name || userEmail.split('@')[0];
-            
+          if (!dbUser) {
+            // Criar novo usuário
             dbUser = await prisma.user.create({
               data: {
                 email: userEmail,
-                name: userName,
-                password: '', // OAuth users don't need password
+                name: user.name || userEmail.split('@')[0],
+                password: '', // OAuth users don't have password
               }
             });
-            console.log("✅ NOVO USUÁRIO CRIADO:", dbUser.id);
-          }
-          
-          if (dbUser?.id) {
-            console.log("📝 Atualizando user.id de", user.id, "para", dbUser.id);
-            user.id = dbUser.id;
-            (user as any).type = dbUser.type;
+            console.log("✅ Novo usuário criado via OAuth:", dbUser.id);
+          } else {
+            console.log("✅ Usuário existente encontrado:", dbUser.id, "type:", dbUser.type);
           }
           
         } catch (error: any) {
-          console.error("❌ ERRO GERAL no signIn:", error.message);
-          console.error("Stack:", error.stack);
+          console.error("❌ Erro no signIn:", error.message);
         }
-        
-        console.log("========================================");
-        console.log("🔑 SIGNIN CALLBACK FINALIZADO");
-        console.log("========================================");
-      } else {
-        console.log("ℹ️ Não é Google OAuth ou sem email, pulando criação de usuário");
       }
       
-      return true; // Deixa o redirect ser tratado pelo callback redirect
+      return true; // Não retornar URL aqui!
     },
     
+    // 2. redirect callback -控制 redirect após login
     async redirect({ url, baseUrl }) {
       console.log("🔄 Redirect callback:", { url, baseUrl });
       
-      // Se é callback do OAuth com código, aguardar processamento
+      // Se é callback do OAuth, processar
       if (url.includes('/api/auth/callback/')) {
-        // Deixa o NextAuth processar o callback
         return url;
       }
       
+      // URLs relativas
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      
+      // URLs do mesmo domínio
       try {
-        // URLs relativas
-        if (url.startsWith("/")) return `${baseUrl}${url}`;
-        
-        // URLs absolutas do mesmo origin
         const target = new URL(url);
         if (target.origin === baseUrl) return url;
-      } catch (error) {
-        console.error("❌ Erro no redirect callback:", error, { url, baseUrl });
-      }
+      } catch (e) {}
       
-      // Fallback seguro
       return baseUrl;
     },
     
+    // 3. jwt callback - persistir dados do usuário no token (PRIMEIRO login)
     async jwt({ token, user, account, profile, trigger }) {
       console.log("🔐 JWT callback:", { 
         hasUser: !!user, 
+        hasAccount: !!account,
         hasTokenId: !!token.id,
-        userId: user?.id,
-        tokenId: token?.id,
         trigger 
       });
       
-      // Quando um usuário faz login (via OAuth ou credentials)
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.image = (user as any).image;
-        token.type = (user as any).type;
-        console.log("✅ Token populado com user ID:", user.id);
+      // Primeiro login (account existe) - adicionar dados ao token
+      if (account && user) {
+        console.log("🔐 Primeiro login, populando token...");
+        
+        // Se é OAuth, buscar/atualizar usuário no banco
+        if (account.provider === 'google' && user.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email.toLowerCase() }
+          });
+          
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.type = dbUser.type;
+            token.email = dbUser.email;
+            token.name = dbUser.name;
+            console.log("✅ Token populado com dados do banco:", dbUser.type);
+          } else {
+            // Usuário não existe no banco, usar dados do OAuth
+            token.id = user.id;
+            token.email = user.email;
+            token.name = user.name;
+            console.log("⚠️ Usuário não encontrado no banco, usando dados OAuth");
+          }
+        } else {
+          // Login com credentials
+          token.id = user.id;
+          token.email = user.email;
+          token.name = user.name;
+          token.type = (user as any).type;
+        }
       }
       
-      // SEMPRE buscar o type atualizado do banco
+      // Sempre atualizar com dados do banco (para garantir type correto)
       if (token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { type: true }
+            select: { type: true, email: true, name: true }
           });
+          
           if (dbUser) {
             token.type = dbUser.type;
-            console.log("✅ Type do usuário carregado:", dbUser.type);
+            token.email = dbUser.email;
+            token.name = dbUser.name;
           }
         } catch (e) {
-          console.error('❌ Erro ao buscar tipo do usuário:', e);
+          console.error("❌ Erro ao buscar type do usuário:", e);
         }
       }
       
       return token;
     },
     
+    // 4. session callback - expor dados do token para o cliente
     async session({ session, token }) {
       console.log("👤 Session callback:", { 
-        hasToken: !!token, 
-        hasSessionUser: !!session.user,
-        tokenType: token?.type,
-        tokenId: token?.id
+        hasToken: !!token,
+        tokenType: token?.type 
       });
       
-      if (token && session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).email = token.email as string;
-        (session.user as any).name = token.name as string;
-        (session.user as any).type = token.type as string | null;
-        (session.user as any).image = token.image as string;
-        // Adicionar accessToken para uso em APIs
-        (session.user as any).accessToken = token.accessToken as string;
+      if (token) {
+        // Copiar dados do token para a sessão
+        (session.user as any).id = token.id;
+        (session.user as any).email = token.email;
+        (session.user as any).name = token.name;
+        (session.user as any).type = token.type;
         
+        // Also expose accessToken for API calls
         (session as any).accessToken = token.accessToken;
         
-        console.log("✅ Session populada:", {
-          id: (session.user as any).id,
-          email: (session.user as any).email,
-          type: (session.user as any).type
+        console.log("✅ Session populada:", { 
+          id: token.id, 
+          type: token.type,
+          email: token.email 
         });
       }
+      
       return session;
     },
   },
@@ -243,30 +230,7 @@ export const authOptions: NextAuthOptions = {
       console.log("📊 Event signIn:", { 
         email: user.email, 
         provider: account?.provider, 
-        isNewUser,
-        userId: user.id 
-      });
-      
-      // Se é um novo usuário via OAuth, logar informação
-      if (isNewUser && account?.provider !== "credentials") {
-        console.log("🆕 Novo usuário OAuth criado:", user.email);
-      }
-    },
-    async createUser({ user }) {
-      console.log("👤 Usuário criado no banco:", { email: user.email, id: user.id });
-    },
-    async linkAccount({ user, account, profile }) {
-      console.log("🔗 Conta vinculada:", { 
-        userId: user.id, 
-        provider: account.provider,
-        providerAccountId: account.providerAccountId 
-      });
-    },
-    async session({ session, token }) {
-      console.log("📅 Session event:", { 
-        hasSession: !!session, 
-        hasUser: !!session?.user,
-        userEmail: session?.user?.email 
+        isNewUser 
       });
     },
   },
