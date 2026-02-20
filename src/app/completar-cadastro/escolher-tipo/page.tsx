@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { 
@@ -16,14 +16,28 @@ import {
   Heart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function EscolherTipoPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+
+  // Salvar token da URL (vindo do OAuth)
+  useEffect(() => {
+    // Verificar token na URL usando window.location
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      if (tokenFromUrl) {
+        localStorage.setItem('token', tokenFromUrl);
+        // Remover token da URL
+        window.history.replaceState({}, '', '/completar-cadastro/escolher-tipo');
+      }
+    }
+  }, []);
 
   const handleSelect = (tipo: 'cliente' | 'profissional') => {
     setLoading(tipo);

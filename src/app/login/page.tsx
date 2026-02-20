@@ -66,17 +66,36 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: formData.email,
-        password: formData.senha,
+      // Usar API direta para login (não depende de NextAuth)
+      const res = await fetch('/api/auth/login-direct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.senha
+        })
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Erro ao fazer login');
       }
 
-      // O useEffect vai cuidar do redirecionamento baseado na sessão
+      // Salvar token diretamente
+      localStorage.setItem('token', data.token);
+      
+      // Salvar dados do usuário
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Redirecionar baseado no tipo
+      if (data.user.type === 'ADMIN') {
+        router.push('/admin');
+      } else if (data.user.type === 'CLIENT') {
+        router.push('/dashboard/cliente');
+      } else {
+        router.push('/dashboard/profissional');
+      }
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -92,7 +111,7 @@ export default function LoginPage() {
       console.log("Calling signIn with:", provider);
       // Usar redirect: true para garantir que a sessão seja estabelecida
       const result = await signIn(provider, {
-        callbackUrl: '/api/auth/oauth-callback',
+        callbackUrl: '/',
       });
       console.log("signIn result:", result);
     } catch (err) {

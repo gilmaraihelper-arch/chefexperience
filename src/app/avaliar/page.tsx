@@ -72,15 +72,11 @@ function AvaliarContent() {
     setLoading(true);
     try {
       const dadosAvaliacao = {
-        professionalId: profissionalId,
+        targetId: profissionalId,
         eventId: eventoId,
-        foodQuality: criterios.find(c => c.id === 'foodQuality')?.nota,
-        serviceQuality: criterios.find(c => c.id === 'serviceQuality')?.nota,
-        punctuality: criterios.find(c => c.id === 'punctuality')?.nota,
-        communication: criterios.find(c => c.id === 'communication')?.nota,
-        valueForMoney: criterios.find(c => c.id === 'valueForMoney')?.nota,
-        overall: notaGeral,
+        rating: notaGeral,
         comment: comentario,
+        type: 'CLIENT_TO_PROFESSIONAL',
       };
 
       const res = await fetch('/api/reviews', {

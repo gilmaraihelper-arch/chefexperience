@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
     error: "/login",
-    newUser: "/completar-cadastro",
+    // newUser removido - o signIn callback redireciona manualmente
   },
   logger: {
     error: (code, metadata) => {
@@ -92,73 +92,50 @@ export const authOptions: NextAuthOptions = {
         console.log("✅ É Google OAuth, processando...");
         
         try {
-          // Verificar se usuário já existe
+          const userEmail = user.email.toLowerCase();
+          
+          // Verificar se usuário já existe usando Prisma
           console.log("🔍 Verificando se usuário existe...");
-          const existingUsers = await prisma.$queryRaw`
-            SELECT id, email, name, type FROM "User" WHERE email = ${user.email} LIMIT 1
-          `;
+          let dbUser = await prisma.user.findUnique({
+            where: { email: userEmail }
+          });
           
-          console.log("📊 Usuários encontrados:", existingUsers);
-          
-          let dbUser: any;
-          
-          if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-            dbUser = existingUsers[0];
+          if (dbUser) {
             console.log("✅ Usuário JÁ EXISTE:", dbUser.id);
             
             // Atualizar nome se necessário
             if (user.name && user.name !== dbUser.name) {
               console.log("🔄 Atualizando nome do usuário...");
-              await prisma.$queryRaw`
-                UPDATE "User" SET name = ${user.name}, "updatedAt" = NOW() WHERE id = ${dbUser.id}
-              `;
+              dbUser = await prisma.user.update({
+                where: { id: dbUser.id },
+                data: { name: user.name }
+              });
               console.log("✅ Nome atualizado");
             }
           } else {
             console.log("🆕 Usuário NÃO existe, criando novo...");
             
-            try {
-              const userName = user.name || user.email.split('@')[0];
-              console.log("📝 Nome para novo usuário:", userName);
-              
-              const newUsers = await prisma.$queryRaw`
-                INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
-                VALUES (gen_random_uuid(), ${user.email}, ${userName}, '', NOW(), NOW())
-                RETURNING id, email, name, type
-              `;
-              
-              console.log("📦 Resultado INSERT:", newUsers);
-              
-              if (Array.isArray(newUsers) && newUsers.length > 0) {
-                dbUser = newUsers[0];
-                console.log("✅ NOVO USUÁRIO CRIADO:", dbUser);
-              } else {
-                console.error("❌ INSERT não retornou dados");
-                // Não retorna false aqui, deixa o fluxo continuar
+            const userName = user.name || userEmail.split('@')[0];
+            
+            dbUser = await prisma.user.create({
+              data: {
+                email: userEmail,
+                name: userName,
+                password: '', // OAuth users don't need password
               }
-            } catch (insertError: any) {
-              console.error("❌ ERRO NO INSERT:", insertError.message);
-              console.error("Stack:", insertError.stack);
-              // Não retorna false, deixa continuar para não travar o login
-            }
+            });
+            console.log("✅ NOVO USUÁRIO CRIADO:", dbUser.id);
           }
           
           if (dbUser?.id) {
             console.log("📝 Atualizando user.id de", user.id, "para", dbUser.id);
             user.id = dbUser.id;
-            
-            // Adicionar informações extras ao user
             (user as any).type = dbUser.type;
-          } else {
-            console.error("❌ dbUser inválido:", dbUser);
-            // Mesmo sem dbUser, não bloqueamos o login
-            // A API de complete-profile vai tentar criar/atualizar
           }
           
         } catch (error: any) {
           console.error("❌ ERRO GERAL no signIn:", error.message);
           console.error("Stack:", error.stack);
-          // Não retorna false, deixa o fluxo continuar
         }
         
         console.log("========================================");
@@ -168,11 +145,17 @@ export const authOptions: NextAuthOptions = {
         console.log("ℹ️ Não é Google OAuth ou sem email, pulando criação de usuário");
       }
       
-      return true;
+      return true; // Deixa o redirect ser tratado pelo callback redirect
     },
     
     async redirect({ url, baseUrl }) {
       console.log("🔄 Redirect callback:", { url, baseUrl });
+      
+      // Se é callback do OAuth com código, aguardar processamento
+      if (url.includes('/api/auth/callback/')) {
+        // Deixa o NextAuth processar o callback
+        return url;
+      }
       
       try {
         // URLs relativas
@@ -211,12 +194,13 @@ export const authOptions: NextAuthOptions = {
       // SEMPRE buscar o type atualizado do banco
       if (token.id) {
         try {
-          const users = await prisma.$queryRaw`
-            SELECT type FROM "User" WHERE id = ${token.id} LIMIT 1
-          `;
-          if (Array.isArray(users) && users.length > 0) {
-            token.type = users[0].type;
-            console.log("✅ Type do usuário carregado:", users[0].type);
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { type: true }
+          });
+          if (dbUser) {
+            token.type = dbUser.type;
+            console.log("✅ Type do usuário carregado:", dbUser.type);
           }
         } catch (e) {
           console.error('❌ Erro ao buscar tipo do usuário:', e);
@@ -239,7 +223,11 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).email = token.email as string;
         (session.user as any).name = token.name as string;
         (session.user as any).type = token.type as string | null;
-        (session.user as any).image = token.image as string | null;
+        (session.user as any).image = token.image as string;
+        // Adicionar accessToken para uso em APIs
+        (session.user as any).accessToken = token.accessToken as string;
+        
+        (session as any).accessToken = token.accessToken;
         
         console.log("✅ Session populada:", {
           id: (session.user as any).id,

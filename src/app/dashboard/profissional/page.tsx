@@ -197,28 +197,11 @@ export default function DashboardProfissionalPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  // Pegar nome do usuário da sessão
-  const userName = session?.user?.name || 'Chef';
-  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
+  const [eventosAPI, setEventosAPI] = useState<any[]>([]);
+  const [pacotesAPI, setPacotesAPI] = useState<any[]>([]);
+  const [loadingEventos, setLoadingEventos] = useState(true);
+  
+  // Todos os useState juntos, antes dos useEffects
   const [abaAtiva, setAbaAtiva] = useState('disponiveis');
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false);
   const [showPacoteModal, setShowPacoteModal] = useState(false);
@@ -230,10 +213,196 @@ export default function DashboardProfissionalPage() {
     pacoteSelecionado: '',
     anexarArquivo: false,
   });
+  const [pacoteForm, setPacoteForm] = useState({
+    nome: '',
+    descricao: '',
+    precoBase: '',
+    minPeople: '10',
+    maxPeople: '100',
+    includes: [] as string[],
+  });
+  const [creatingPackage, setCreatingPackage] = useState(false);
+
+  // useEffects vêm depois de todos os useState
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      if (tokenFromUrl) {
+        localStorage.setItem('token', tokenFromUrl);
+        router.replace('/dashboard/profissional');
+      }
+    }
+  }, [router]);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (status !== 'authenticated') return;
+      try {
+        let token = localStorage.getItem('token');
+        
+        // Se não tem token, buscar da API
+        if (!token) {
+          try {
+            const tokenRes = await fetch('/api/auth/token');
+            const tokenData = await tokenRes.json();
+            if (tokenData.token) {
+              localStorage.setItem('token', tokenData.token);
+              token = tokenData.token;
+            }
+          } catch (e) {
+            console.log('Token não disponível');
+          }
+        }
+        
+        if (!token) return;
+        
+        const eventsRes = await fetch('/api/events?type=available', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const eventsData = await eventsRes.json();
+        if (eventsData.events) setEventosAPI(eventsData.events);
+        
+        const packagesRes = await fetch('/api/packages', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const packagesData = await packagesRes.json();
+        if (packagesData.packages) setPacotesAPI(packagesData.packages);
+      } catch (err) {
+        console.error('Erro ao buscar dados:', err);
+      } finally {
+        setLoadingEventos(false);
+      }
+    }
+    fetchData();
+  }, [status]);
+
+  useEffect(() => {
+    // Verificar auth via localStorage primeiro (nossa API)
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    // Se tem token no localStorage, não precisa de sessão NextAuth
+    if (token && userStr) {
+      // Usuário logado via nossa API
+      setLoadingEventos(false);
+      return;
+    }
+    
+    // Caso contrário, verificar sessão NextAuth
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  // Obter dados do usuário - só executar no cliente
+  const [userData, setUserData] = useState<any>({});
+  
+  useEffect(() => {
+    // Carregar dados do usuário do localStorage
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        setUserData(JSON.parse(stored));
+      } catch (e) {}
+    }
+  }, []);
+  
+  const userName = (session?.user?.name || userData.name || 'Chef');
+  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+  // Track auth state from localStorage
+  const [hasToken, setHasToken] = useState(false);
+  
+  useEffect(() => {
+    setHasToken(!!localStorage.getItem('token'));
+  }, []);
+
+  // Verificar se tem algum tipo de autenticação
+  const isAuthenticated = status === 'authenticated' || hasToken;
+  const hasAuth = status === 'authenticated' || hasToken;
+
+  if (status === 'loading' && !hasToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Permite acesso se tem token no localStorage OU sessão NextAuth
+  if (!session && !hasToken) {
+    return null;
+  }
 
   const handleEnviarOrcamento = (evento: any) => {
     setEventoSelecionado(evento);
     setShowOrcamentoModal(true);
+  };
+
+  const handleCriarPacote = async () => {
+    let token = localStorage.getItem('token');
+    
+    // Se não tem token, buscar da API
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/api/auth/token');
+        const tokenData = await tokenRes.json();
+        if (tokenData.token) {
+          localStorage.setItem('token', tokenData.token);
+          token = tokenData.token;
+        }
+      } catch (e) {
+        console.log('Token não disponível');
+      }
+    }
+    
+    if (!token) {
+      alert('Você precisa estar logado');
+      return;
+    }
+    
+    console.log('Criando pacote com dados:', pacoteForm);
+    setCreatingPackage(true);
+    try {
+      const res = await fetch('/api/packages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: pacoteForm.nome,
+          description: pacoteForm.descricao,
+          basePrice: pacoteForm.precoBase,
+          minPeople: pacoteForm.minPeople,
+          maxPeople: pacoteForm.maxPeople,
+          includes: pacoteForm.includes,
+        })
+      });
+      
+      console.log('Response status:', res.status);
+      const data = await res.json();
+      console.log('Response data:', data);
+      if (data.success) {
+        // Recarregar pacotes
+        const packagesRes = await fetch('/api/packages', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const packagesData = await packagesRes.json();
+        if (packagesData.packages) setPacotesAPI(packagesData.packages);
+        
+        setShowPacoteModal(false);
+        setPacoteForm({ nome: '', descricao: '', precoBase: '', minPeople: '10', maxPeople: '100', includes: [] });
+      } else {
+        alert(data.error || 'Erro ao criar pacote');
+      }
+    } catch (err) {
+      console.error('Erro ao criar pacote:', err);
+      alert('Erro ao criar pacote');
+    } finally {
+      setCreatingPackage(false);
+    }
   };
 
   const handleSubmitOrcamento = () => {
@@ -361,38 +530,43 @@ export default function DashboardProfissionalPage() {
             </div>
             
             <div className="space-y-4">
-              {eventosDisponiveis.map((evento) => (
+              {loadingEventos ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                (eventosAPI.length > 0 ? eventosAPI : eventosDisponiveis).map((evento: any) => (
                 <Card key={evento.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900">{evento.evento}</h3>
+                          <h3 className="font-semibold text-gray-900">{evento.name || evento.evento}</h3>
                           <Badge className="bg-green-100 text-green-700">{evento.match}% Match</Badge>
                         </div>
-                        <p className="text-sm text-gray-500">{evento.cliente}</p>
+                        <p className="text-sm text-gray-500">{evento.client?.user?.name || evento.cliente}</p>
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {new Date(evento.data).toLocaleDateString('pt-BR')}
+                            {new Date(evento.date || evento.data).toLocaleDateString('pt-BR')}
                           </span>
                           <span className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
-                            {evento.pessoas} pessoas
+                            {evento.guestCount || evento.pessoas} pessoas
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
-                            {evento.local} • {evento.distancia}
+                            {evento.city ? `${evento.city}, ${evento.state}` : `${evento.local} • ${evento.distancia}`}
                           </span>
-                          <Badge variant="secondary">{faixaPrecoLabels[evento.faixaPreco]}</Badge>
-                          {evento.possuiCozinha && (
+                          <Badge variant="secondary">{evento.priceRange || faixaPrecoLabels[evento.faixaPreco]}</Badge>
+                          {(evento.hasKitchen || evento.possuiCozinha) && (
                             <Badge variant="secondary" className="bg-orange-100 text-orange-700">
                               Com Cozinha
                             </Badge>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {evento.estilosCulinaria.map((estilo) => (
+                          {(evento.cuisineStyles ? JSON.parse(evento.cuisineStyles) : evento.estilosCulinaria).map((estilo: string) => (
                             <span key={estilo} className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                               {estilo}
                             </span>
@@ -417,7 +591,8 @@ export default function DashboardProfissionalPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ))
+              )}
             </div>
           </TabsContent>
 
@@ -535,14 +710,14 @@ export default function DashboardProfissionalPage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pacotesPreDefinidos.map((pacote) => (
-                <Card key={pacote.id} className={`hover:shadow-lg transition-shadow ${!pacote.ativo ? 'opacity-60' : ''}`}>
+              {(pacotesAPI.length > 0 ? pacotesAPI : pacotesPreDefinidos).map((pacote: any) => (
+                <Card key={pacote.id} className={`hover:shadow-lg transition-shadow ${!pacote.isActive && pacote.ativo !== undefined && !pacote.ativo ? 'opacity-60' : ''}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{pacote.nome}</h3>
-                        <Badge className={pacote.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}>
-                          {pacote.ativo ? 'Ativo' : 'Inativo'}
+                        <h3 className="font-semibold text-gray-900">{pacote.name || pacote.nome}</h3>
+                        <Badge className={pacote.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}>
+                          {pacote.isActive ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </div>
                       <div className="flex gap-1">
@@ -554,21 +729,21 @@ export default function DashboardProfissionalPage() {
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">{pacote.descricao}</p>
+                    <p className="text-sm text-gray-600 mb-3">{pacote.description || pacote.descricao}</p>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl font-bold text-amber-600">
-                        R$ {pacote.precoBase}
+                        R$ {(pacote.basePrice || pacote.precoBase)?.toLocaleString('pt-BR')}
                       </span>
                       <span className="text-sm text-gray-500">/pessoa</span>
                     </div>
                     <div className="text-sm text-gray-500 mb-3">
                       <Users className="w-4 h-4 inline mr-1" />
-                      {pacote.pessoasMin} - {pacote.pessoasMax} pessoas
+                      {pacote.minPeople || pacote.pessoasMin} - {pacote.maxPeople || pacote.pessoasMax} pessoas
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-gray-700">Inclui:</p>
                       <div className="flex flex-wrap gap-1">
-                        {pacote.inclui.map((item) => (
+                        {(pacote.includes || pacote.inclui || []).map((item: any) => (
                           <span key={item} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
                             {item}
                           </span>
@@ -829,7 +1004,7 @@ export default function DashboardProfissionalPage() {
                 <div>
                   <Label>Selecione o pacote</Label>
                   <div className="grid gap-2 mt-2">
-                    {pacotesPreDefinidos.filter(p => p.ativo).map((pacote) => (
+                    {(pacotesAPI.length > 0 ? pacotesAPI.filter((p: any) => p.isActive) : pacotesPreDefinidos.filter(p => p.ativo)).map((pacote: any) => (
                       <button
                         key={pacote.id}
                         onClick={() => setOrcamentoData({...orcamentoData, pacoteSelecionado: pacote.id.toString()})}
@@ -861,8 +1036,9 @@ export default function DashboardProfissionalPage() {
                 {orcamentoData.usarPacote && orcamentoData.pacoteSelecionado && eventoSelecionado && (
                   <p className="text-sm text-gray-500 mt-1">
                     Sugestão: R$ {(
+                      (pacotesAPI.length > 0 ? pacotesAPI : pacotesPreDefinidos).find((p: any) => p.id.toString() === orcamentoData.pacoteSelecionado)?.basePrice || 
                       pacotesPreDefinidos.find(p => p.id.toString() === orcamentoData.pacoteSelecionado)?.precoBase || 0
-                    ) * eventoSelecionado.pessoas}
+                    ) * (eventoSelecionado.guestCount || eventoSelecionado.pessoas)}
                   </p>
                 )}
               </div>
@@ -921,20 +1097,50 @@ export default function DashboardProfissionalPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="nomePacote">Nome do Pacote</Label>
-              <Input id="nomePacote" placeholder="Ex: Casamento Premium" />
+              <Input 
+                id="nomePacote" 
+                placeholder="Ex: Casamento Premium"
+                value={pacoteForm.nome}
+                onChange={(e) => setPacoteForm({...pacoteForm, nome: e.target.value})}
+              />
             </div>
             <div>
               <Label htmlFor="descricaoPacote">Descrição</Label>
-              <Input id="descricaoPacote" placeholder="Descreva o que está incluído..." />
+              <Input 
+                id="descricaoPacote" 
+                placeholder="Descreva o que está incluído..."
+                value={pacoteForm.descricao}
+                onChange={(e) => setPacoteForm({...pacoteForm, descricao: e.target.value})}
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="precoBase">Preço Base (R$)</Label>
-                <Input id="precoBase" type="number" placeholder="Ex: 80" />
+                <Label htmlFor="precoBase">Preço (R$)</Label>
+                <Input 
+                  id="precoBase" 
+                  type="number" 
+                  placeholder="Ex: 80"
+                  value={pacoteForm.precoBase}
+                  onChange={(e) => setPacoteForm({...pacoteForm, precoBase: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="pessoasMin">Mín. Pessoas</Label>
+                <Input 
+                  id="pessoasMin" 
+                  type="number" 
+                  value={pacoteForm.minPeople}
+                  onChange={(e) => setPacoteForm({...pacoteForm, minPeople: e.target.value})}
+                />
               </div>
               <div>
                 <Label htmlFor="pessoasMax">Máx. Pessoas</Label>
-                <Input id="pessoasMax" type="number" placeholder="Ex: 150" />
+                <Input 
+                  id="pessoasMax" 
+                  type="number" 
+                  value={pacoteForm.maxPeople}
+                  onChange={(e) => setPacoteForm({...pacoteForm, maxPeople: e.target.value})}
+                />
               </div>
             </div>
             <div>
@@ -942,7 +1148,15 @@ export default function DashboardProfissionalPage() {
               <div className="space-y-2 mt-2">
                 {['Entradas', 'Prato Principal', 'Sobremesa', 'Bebidas', 'Garçom'].map((item) => (
                   <Label key={item} className="flex items-center gap-2">
-                    <Checkbox />
+                    <Checkbox 
+                      checked={pacoteForm.includes.includes(item)}
+                      onCheckedChange={(checked) => {
+                        const newIncludes = checked 
+                          ? [...pacoteForm.includes, item]
+                          : pacoteForm.includes.filter((i: string) => i !== item);
+                        setPacoteForm({...pacoteForm, includes: newIncludes});
+                      }}
+                    />
                     <span className="text-sm">{item}</span>
                   </Label>
                 ))}
@@ -961,13 +1175,15 @@ export default function DashboardProfissionalPage() {
               </Button>
               <Button 
                 className="bg-gradient-to-r from-amber-500 to-orange-600"
-                onClick={() => {
-                  setShowPacoteModal(false);
-                  alert('Pacote criado com sucesso!');
-                }}
+                onClick={handleCriarPacote}
+                disabled={creatingPackage || !pacoteForm.nome || !pacoteForm.precoBase}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Pacote
+                {creatingPackage ? 'Criando...' : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Pacote
+                  </>
+                )}
               </Button>
             </div>
           </div>

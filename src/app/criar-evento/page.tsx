@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ChefHat, 
@@ -173,6 +173,7 @@ export default function CriarEventoPage() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [selectedPros, setSelectedPros] = useState<number[]>([]);
   const [orcamentoSlider, setOrcamentoSlider] = useState(150);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -225,6 +226,32 @@ export default function CriarEventoPage() {
       match: Math.floor(85 + Math.random() * 15)
     })).sort((a, b) => b.match - a.match);
   };
+
+  useEffect(() => {
+    async function checkAuth() {
+      let token = localStorage.getItem('token');
+      
+      // Se não tem token, buscar da API
+      if (!token) {
+        try {
+          const res = await fetch('/api/auth/token');
+          const data = await res.json();
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            token = data.token;
+          }
+        } catch (e) {
+          console.log('Erro ao buscar token');
+        }
+      }
+      
+      if (!token) {
+        router.push('/login');
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
 
   const handleNext = () => {
     if (currentStep < 6) {

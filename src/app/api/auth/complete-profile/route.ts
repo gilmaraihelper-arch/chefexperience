@@ -34,87 +34,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualizar usuário usando queryRaw - buscar pelo email que é mais confiável
-    const userEmail = session.user.email || body.email;
+    const userId = session.user.id;
+    const userEmail = session.user.email;
     
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: 'Email não encontrado na sessão' },
-        { status: 400 }
-      );
-    }
-    
-    // Primeiro, buscar o usuário pelo email
-    const users = await prisma.$queryRaw`
-      SELECT id, email FROM "User" WHERE email = ${userEmail} LIMIT 1
-    `;
-    
-    let userId: string;
-    
-    if (!Array.isArray(users) || users.length === 0) {
-      // Criar usuário se não existir
-      console.log("🆕 Criando novo usuário...");
-      const newUsers = await prisma.$queryRaw`
-        INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
-        VALUES (gen_random_uuid(), ${userEmail}, ${session.user.name || userEmail.split('@')[0]}, '', NOW(), NOW())
-        RETURNING id, email
-      `;
-      
-      if (!Array.isArray(newUsers) || newUsers.length === 0) {
-        return NextResponse.json(
-          { error: 'Erro ao criar usuário' },
-          { status: 500 }
-        );
+    // Atualizar usuário usando Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        type: type,
+        phone: phone,
+        cep: cep,
+        address: address,
+        number: number,
+        complement: complement || null,
+        neighborhood: neighborhood,
+        city: city,
+        state: state,
+        personType: 'PF',
       }
-      userId = newUsers[0].id;
-    } else {
-      userId = users[0].id;
-    }
-    
-    // Agora atualizar pelo ID encontrado
-    const updatedUsers = await prisma.$queryRaw`
-      UPDATE "User"
-      SET 
-        type = ${type}::"UserType",
-        phone = ${phone},
-        cep = ${cep},
-        address = ${address},
-        number = ${number},
-        complement = ${complement || null},
-        neighborhood = ${neighborhood},
-        city = ${city},
-        state = ${state},
-        "personType" = 'PF'::"PersonType",
-        "updatedAt" = NOW()
-      WHERE id = ${userId}
-      RETURNING id, email, name, type
-    `;
+    });
 
-    const updatedUser = Array.isArray(updatedUsers) ? updatedUsers[0] : null;
-
-    if (!updatedUser) {
-      return NextResponse.json(
-        { error: 'Erro ao atualizar usuário' },
-        { status: 500 }
-      );
-    }
+    console.log("✅ Usuário atualizado:", updatedUser.id);
 
     // Se for cliente, criar perfil de cliente
     if (type === 'CLIENT') {
       try {
-        await prisma.$queryRaw`
-          INSERT INTO "ClientProfile" (id, "userId", "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${userId}, NOW(), NOW())
-          ON CONFLICT ("userId") DO NOTHING
-        `;
+        await prisma.clientProfile.upsert({
+          where: { userId: userId },
+          update: {},
+          create: {
+            userId: userId,
+          }
+        });
+        console.log("✅ Perfil de cliente criado/atualizado");
       } catch (profileError) {
-        console.log('Perfil de cliente já existe ou erro:', profileError);
+        console.log('Erro ao criar perfil de cliente:', profileError);
+      }
+    }
+
+    // Se for profissional, criar perfil de profissional
+    if (type === 'PROFESSIONAL') {
+      try {
+        await prisma.professionalProfile.upsert({
+          where: { userId: userId },
+          update: {},
+          create: {
+            userId: userId,
+            description: '',
+            eventTypes: '["corporativo"]',
+            cuisineStyles: '["brasileira"]',
+            serviceTypes: '["buffet"]',
+            priceRanges: '[200,500]',
+            capacity: '50',
+          }
+        });
+        console.log("✅ Perfil de profissional criado/atualizado");
+      } catch (profileError) {
+        console.log('Erro ao criar perfil de profissional:', profileError);
       }
     }
 
     return NextResponse.json({
       success: true,
-      user: updatedUser,
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        type: updatedUser.type
+      },
     });
   } catch (error: any) {
     console.error('Erro ao completar perfil:', error);

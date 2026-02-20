@@ -7,18 +7,11 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   console.log("📝 API complete-profile-professional INICIADA");
-  console.log("📝 ==========================================");
   
   try {
     const session = await getServerSession(authOptions);
     
-    console.log("🔐 Sessão obtida:", { 
-      hasSession: !!session, 
-      hasEmail: !!session?.user?.email 
-    });
-    
     if (!session?.user?.email) {
-      console.error("❌ Erro: Sessão inválida");
       return NextResponse.json(
         { error: 'Não autorizado - sessão inválida' },
         { status: 401 }
@@ -26,7 +19,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log("📦 Body recebido:", JSON.stringify(body, null, 2));
     
     const { 
       personType, 
@@ -49,6 +41,8 @@ export async function POST(request: NextRequest) {
       capacidade,
       raioAtendimento,
       description,
+      differentials,
+      experience,
       temGarcom,
       temSoftDrinks,
       temBebidaAlcoolica,
@@ -60,211 +54,118 @@ export async function POST(request: NextRequest) {
       temDoces,
       temBolo,
       temPratosTalheres,
-      certificacoes,
-      formasPagamento,
-      diasSemana
     } = body;
 
     // Validações obrigatórias
     if (!personType || !phone) {
-      console.error("❌ Erro: Campos obrigatórios faltando", { personType, phone });
       return NextResponse.json(
         { error: 'Tipo de pessoa e telefone são obrigatórios' },
         { status: 400 }
       );
     }
 
-    // Buscar usuário pelo email
-    console.log("🔍 Buscando usuário pelo email:", session.user.email);
-    
-    const users = await prisma.$queryRaw`
-      SELECT id, email, name FROM "User" WHERE email = ${session.user.email} LIMIT 1
-    `;
-    
-    console.log("🔍 Usuários encontrados:", users);
+    // Buscar usuário pelo email usando Prisma
+    let user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
     
     let userId: string;
     let userName: string;
     
-    if (!Array.isArray(users) || users.length === 0) {
+    if (!user) {
       // Criar usuário se não existir
-      console.log("🆕 Usuário não encontrado, criando...");
-      
       const name = razaoSocial || nomeFantasia || session.user.name || session.user.email.split('@')[0];
       
-      try {
-        const newUsers = await prisma.$queryRaw`
-          INSERT INTO "User" (id, email, name, password, "createdAt", "updatedAt")
-          VALUES (gen_random_uuid(), ${session.user.email}, ${name}, '', NOW(), NOW())
-          RETURNING id, email, name
-        `;
-        
-        if (Array.isArray(newUsers) && newUsers.length > 0) {
-          console.log("✅ Usuário criado:", newUsers[0]);
-          userId = newUsers[0].id;
-          userName = newUsers[0].name;
-        } else {
-          console.error("❌ Erro: INSERT não retornou dados");
-          return NextResponse.json(
-            { error: 'Erro ao criar usuário' },
-            { status: 500 }
-          );
+      user = await prisma.user.create({
+        data: {
+          email: session.user.email,
+          name: name,
+          password: '', // OAuth users don't need password
         }
-      } catch (createError: any) {
-        console.error("❌ Erro ao criar usuário:", createError.message);
-        return NextResponse.json(
-          { error: 'Erro ao criar usuário: ' + createError.message },
-          { status: 500 }
-        );
+      });
+      console.log("✅ Usuário criado:", user.id);
+    }
+    
+    userId = user.id;
+    userName = user.name;
+
+    // Atualizar usuário usando Prisma
+    user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        type: 'PROFESSIONAL',
+        personType: personType,
+        cpf: cpf || null,
+        cnpj: cnpj || null,
+        phone: phone,
+        whatsapp: whatsapp || null,
+        cep: cep,
+        address: address,
+        number: number,
+        complement: complement || null,
+        neighborhood: neighborhood,
+        city: city,
+        state: state,
+        razaoSocial: razaoSocial || null,
+        nomeFantasia: nomeFantasia || null,
       }
-    } else {
-      userId = users[0].id;
-      userName = users[0].name;
-      console.log("✅ Usuário existente:", { userId, userName });
-    }
+    });
+
+    console.log("✅ User atualizado:", user.id);
+
+    // Criar/atualizar ProfessionalProfile usando Prisma
+    // Converter arrays para JSON strings
+    const eventTypesJson = JSON.stringify(tiposEvento || []);
+    const cuisineStylesJson = JSON.stringify(especialidades || []);
+    const serviceTypesJson = JSON.stringify(faixaPreco || []); // This should be serviceTypes
+    const priceRangesJson = JSON.stringify(faixaPreco || []);
+    const capacityJson = JSON.stringify(capacidade || []);
     
-    // Atualizar usuário
-    console.log("📝 Atualizando User...");
-    const updatedUsers = await prisma.$queryRaw`
-      UPDATE "User"
-      SET 
-        type = 'PROFESSIONAL'::"UserType",
-        "personType" = ${personType}::"PersonType",
-        cpf = ${cpf || null},
-        cnpj = ${cnpj || null},
-        phone = ${phone},
-        whatsapp = ${whatsapp || null},
-        cep = ${cep},
-        address = ${address},
-        number = ${number},
-        complement = ${complement || null},
-        neighborhood = ${neighborhood},
-        city = ${city},
-        state = ${state},
-        "updatedAt" = NOW()
-      WHERE id = ${userId}
-      RETURNING id, email, name, type
-    `;
+    const profileData = {
+      userId: userId,
+      description: description || '',
+      experience: experience || '',
+      differentials: differentials || '',
+      eventTypes: eventTypesJson,
+      cuisineStyles: cuisineStylesJson,
+      serviceTypes: serviceTypesJson,
+      priceRanges: priceRangesJson,
+      capacity: capacityJson,
+      hasWaiter: temGarcom || false,
+      hasSoftDrinks: temSoftDrinks || false,
+      hasAlcoholicDrinks: temBebidaAlcoolica || false,
+      hasDecoration: temDecoracao || false,
+      hasRental: temLocacao || false,
+      hasSoundLight: temSom || false,
+      hasPhotographer: temFotografo || false,
+      hasBartender: temBartender || false,
+      hasSweets: temDoces || false,
+      hasCake: temBolo || false,
+      hasPlatesCutlery: temPratosTalheres || false,
+      serviceRadiusKm: raioAtendimento || 50,
+    };
 
-    const updatedUser = Array.isArray(updatedUsers) ? updatedUsers[0] : null;
+    // Usar upsert para criar ou atualizar
+    const profile = await prisma.professionalProfile.upsert({
+      where: { userId: userId },
+      update: profileData,
+      create: profileData
+    });
 
-    if (!updatedUser) {
-      console.error("❌ Erro: UPDATE do User não retornou dados");
-      return NextResponse.json(
-        { error: 'Erro ao atualizar usuário' },
-        { status: 500 }
-      );
-    }
-
-    console.log("✅ User atualizado:", updatedUser);
-
-    // Criar/atualizar ProfessionalProfile
-    console.log("📝 Criando/atualizando ProfessionalProfile...");
-    
-    try {
-      // Primeiro tenta UPDATE se já existe
-      const existingProfile = await prisma.$queryRaw`
-        SELECT id FROM "ProfessionalProfile" WHERE "userId" = ${userId} LIMIT 1
-      `;
-      
-      if (Array.isArray(existingProfile) && existingProfile.length > 0) {
-        // UPDATE
-        console.log("📝 ProfessionalProfile existe, fazendo UPDATE...");
-        await prisma.$queryRaw`
-          UPDATE "ProfessionalProfile"
-          SET 
-            description = ${description || ''},
-            "eventTypes" = ${JSON.stringify(tiposEvento || [])}::jsonb,
-            "cuisineStyles" = ${JSON.stringify(especialidades || [])}::jsonb,
-            "priceRanges" = ${JSON.stringify(faixaPreco || [])}::jsonb,
-            "capacityRanges" = ${JSON.stringify(capacidade || [])}::jsonb,
-            "serviceRadius" = ${raioAtendimento || 50},
-            "hasWaiter" = ${temGarcom || false},
-            "hasSoftDrinks" = ${temSoftDrinks || false},
-            "hasAlcoholicDrinks" = ${temBebidaAlcoolica || false},
-            "hasDecoration" = ${temDecoracao || false},
-            "hasRentals" = ${temLocacao || false},
-            "hasSoundLighting" = ${temSom || false},
-            "hasPhotographer" = ${temFotografo || false},
-            "hasBartender" = ${temBartender || false},
-            "hasSweets" = ${temDoces || false},
-            "hasCake" = ${temBolo || false},
-            "hasTableware" = ${temPratosTalheres || false},
-            certifications = ${JSON.stringify(certificacoes || [])}::jsonb,
-            "paymentMethods" = ${JSON.stringify(formasPagamento || [])}::jsonb,
-            "availableDays" = ${JSON.stringify(diasSemana || [])}::jsonb,
-            "updatedAt" = NOW()
-          WHERE "userId" = ${userId}
-        `;
-      } else {
-        // INSERT
-        console.log("📝 ProfessionalProfile não existe, fazendo INSERT...");
-        await prisma.$queryRaw`
-          INSERT INTO "ProfessionalProfile" (
-            id, "userId", description, "eventTypes", "cuisineStyles", "priceRanges", 
-            "capacityRanges", "serviceRadius", "hasWaiter", "hasSoftDrinks", 
-            "hasAlcoholicDrinks", "hasDecoration", "hasRentals", "hasSoundLighting",
-            "hasPhotographer", "hasBartender", "hasSweets", "hasCake", "hasTableware",
-            certifications, "paymentMethods", "availableDays", "createdAt", "updatedAt"
-          )
-          VALUES (
-            gen_random_uuid(),
-            ${userId},
-            ${description || ''},
-            ${JSON.stringify(tiposEvento || [])}::jsonb,
-            ${JSON.stringify(especialidades || [])}::jsonb,
-            ${JSON.stringify(faixaPreco || [])}::jsonb,
-            ${JSON.stringify(capacidade || [])}::jsonb,
-            ${raioAtendimento || 50},
-            ${temGarcom || false},
-            ${temSoftDrinks || false},
-            ${temBebidaAlcoolica || false},
-            ${temDecoracao || false},
-            ${temLocacao || false},
-            ${temSom || false},
-            ${temFotografo || false},
-            ${temBartender || false},
-            ${temDoces || false},
-            ${temBolo || false},
-            ${temPratosTalheres || false},
-            ${JSON.stringify(certificacoes || [])}::jsonb,
-            ${JSON.stringify(formasPagamento || [])}::jsonb,
-            ${JSON.stringify(diasSemana || [])}::jsonb,
-            NOW(),
-            NOW()
-          )
-        `;
-      }
-      
-      console.log("✅ ProfessionalProfile criado/atualizado com sucesso");
-      
-      // Verificar se foi realmente criado
-      const verifyProfile = await prisma.$queryRaw`
-        SELECT id, "userId" FROM "ProfessionalProfile" WHERE "userId" = ${userId} LIMIT 1
-      `;
-      console.log("🔍 Verificação pós-save:", verifyProfile);
-      
-    } catch (profileError: any) {
-      console.error("❌ Erro ao criar ProfessionalProfile:", profileError.message);
-      console.error("Stack:", profileError.stack);
-      // Não retorna erro - o User já foi atualizado
-    }
-
-    console.log("📝 ==========================================");
-    console.log("📝 API complete-profile-professional CONCLUÍDA COM SUCESSO");
-
-    // Buscar o ProfessionalProfile criado para retornar
-    const profileResult = await prisma.$queryRaw`
-      SELECT id FROM "ProfessionalProfile" WHERE "userId" = ${userId} LIMIT 1
-    `;
-    
-    const profile = Array.isArray(profileResult) ? profileResult[0] : null;
-    console.log("✅ Profile retornado:", profile);
+    console.log("✅ ProfessionalProfile criado/atualizado:", profile.id);
 
     return NextResponse.json({
       success: true,
-      user: updatedUser,
-      profile: profile,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        type: user.type
+      },
+      profile: {
+        id: profile.id,
+        userId: profile.userId
+      },
       message: 'Perfil profissional atualizado com sucesso'
     });
   } catch (error: any) {

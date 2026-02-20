@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Listar eventos do cliente
+// Listar eventos
 export async function GET(request: NextRequest) {
   try {
     const user = getUserFromToken(request)
@@ -203,6 +203,110 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type') // 'available' para profissionais
+
+    // Se é profissional buscando eventos disponíveis
+    if (user.type === 'PROFESSIONAL' && type === 'available') {
+      const professionalProfile = await prisma.professionalProfile.findUnique({
+        where: { userId: user.userId }
+      })
+
+      if (!professionalProfile) {
+        return NextResponse.json({ error: 'Perfil profissional não encontrado' }, { status: 404 })
+      }
+
+      // Buscar eventos abertos - removido filtro de propostas para debug
+      let events;
+      try {
+        events = await prisma.event.findMany({
+          where: {
+            status: 'OPEN',
+          },
+          include: {
+            client: {
+              include: {
+                user: {
+                  select: { name: true }
+                }
+              }
+            },
+            _count: {
+              select: { proposals: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (e) {
+        console.error('Erro ao buscar eventos:', e);
+        return NextResponse.json({ error: 'Erro ao buscar eventos', details: String(e) }, { status: 500 })
+      }
+
+      // Calcular match para cada evento
+      const eventsWithMatch = events.map(event => {
+        let score = 0;
+        
+        // Match por estilo culinário
+        try {
+          if (event.cuisineStyles && professionalProfile.cuisineStyles) {
+            const eventStyles = JSON.parse(event.cuisineStyles);
+            const profStyles = JSON.parse(professionalProfile.cuisineStyles);
+            const matches = eventStyles.filter((s: string) => profStyles.includes(s));
+            if (matches.length > 0) score += 25;
+          }
+        } catch (e) { score += 0; }
+        
+        // Match por tipo de evento
+        try {
+          if (event.eventType && professionalProfile.eventTypes) {
+            const profTypes = JSON.parse(professionalProfile.eventTypes);
+            if (profTypes.includes(event.eventType)) score += 20;
+          }
+        } catch (e) { score += 0; }
+        
+        // Match por capacidade
+        try {
+          if (event.guestCount && professionalProfile.capacity) {
+            const capacities = JSON.parse(professionalProfile.capacity);
+            if (Math.max(...capacities) >= event.guestCount) score += 20;
+          }
+        } catch (e) { score += 0; }
+        
+        // Match por orçamento
+        try {
+          if (event.maxBudget && professionalProfile.priceRanges) {
+            const budget = event.maxBudget;
+            const ranges = JSON.parse(professionalProfile.priceRanges);
+            for (const range of ranges) {
+              const nums = range.match(/\d+/g);
+              if (nums && nums.length >= 2) {
+                const min = parseInt(nums[0]);
+                const max = parseInt(nums[1]);
+                if (budget >= min && budget <= max) {
+                  score += 25;
+                  break;
+                }
+              }
+            }
+          }
+        } catch (e) { score += 0; }
+        
+        // Match por rating
+        if (professionalProfile.rating) {
+          score += (professionalProfile.rating / 5) * 10;
+        }
+
+        return {
+          ...event,
+          match: Math.min(Math.round(score), 100)
+        };
+      }).filter(e => e.match >= 50) // Filtrar eventos com match >= 50%
+       .sort((a, b) => b.match - a.match);
+
+      return NextResponse.json({ events: eventsWithMatch })
+    }
+
+    // Se é cliente, retornar eventos do cliente
     const clientProfile = await prisma.clientProfile.findUnique({
       where: { userId: user.userId }
     })

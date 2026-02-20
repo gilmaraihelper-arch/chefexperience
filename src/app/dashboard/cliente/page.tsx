@@ -125,12 +125,89 @@ export default function DashboardClientePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [abaAtiva, setAbaAtiva] = useState('eventos');
+  const [eventos, setEventos] = useState<any[]>([]);
+  const [loadingEventos, setLoadingEventos] = useState(true);
+  
+  // Track auth state from localStorage
+  const [userData, setUserData] = useState<any>({});
+  const [hasToken, setHasToken] = useState(false);
+  
+  useEffect(() => {
+    // Carregar dados do usuário do localStorage
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        setUserData(JSON.parse(stored));
+      } catch (e) {}
+    }
+    setHasToken(!!localStorage.getItem('token'));
+  }, []);
+
+  // Salvar token da URL (vindo do OAuth)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      if (tokenFromUrl) {
+        localStorage.setItem('token', tokenFromUrl);
+        router.replace('/dashboard/cliente');
+      }
+    }
+  }, [router]);
 
   useEffect(() => {
+    // Verificar auth via localStorage primeiro
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+      return;
+    }
+    
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  // Buscar eventos da API
+  useEffect(() => {
+    async function fetchEventos() {
+      // Permite se tem token localStorage OU sessão autenticada
+      if (status !== 'authenticated' && !hasToken) return;
+      try {
+        let token = localStorage.getItem('token');
+        
+        // Se não tem token, buscar da API
+        if (!token) {
+          try {
+            const tokenRes = await fetch('/api/auth/token');
+            const tokenData = await tokenRes.json();
+            if (tokenData.token) {
+              localStorage.setItem('token', tokenData.token);
+              token = tokenData.token;
+            }
+          } catch (e) {
+            console.log('Token não disponível');
+          }
+        }
+        
+        if (!token) return;
+        
+        const res = await fetch('/api/events', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.events) {
+          setEventos(data.events);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar eventos:', err);
+      } finally {
+        setLoadingEventos(false);
+      }
+    }
+    fetchEventos();
+  }, [status]);
 
   if (status === 'loading') {
     return (
@@ -140,7 +217,9 @@ export default function DashboardClientePage() {
     );
   }
 
-  if (!session) {
+  // Permite acesso se tem token no localStorage OU sessão NextAuth
+  // Permite acesso se tem token no localStorage OU sessão NextAuth
+  if (!session && !hasToken) {
     return null;
   }
 
@@ -169,7 +248,7 @@ export default function DashboardClientePage() {
                 Novo Evento
               </Button>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
+                {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
               </div>
               <Button variant="ghost" size="sm" onClick={() => router.push('/logout')}>
                 <LogOut className="w-4 h-4" />
@@ -184,7 +263,7 @@ export default function DashboardClientePage() {
         {/* Welcome */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
-            Olá, {session?.user?.name || 'Cliente'}! 👋
+            Olá, {session?.user?.name || userData?.name || 'Cliente'}! 👋
           </h1>
           <p className="text-gray-600">Bem-vinda ao seu dashboard</p>
         </div>
@@ -196,7 +275,7 @@ export default function DashboardClientePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm">Meus Eventos</p>
-                  <p className="text-2xl font-bold">4</p>
+                  <p className="text-2xl font-bold">{eventos.length}</p>
                 </div>
                 <Calendar className="w-8 h-8 text-white/60" />
               </div>
@@ -207,7 +286,9 @@ export default function DashboardClientePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-500 text-sm">Propostas</p>
-                  <p className="text-2xl font-bold text-gray-900">5</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {eventos.reduce((acc: number, e: any) => acc + (e.proposals?.length || 0), 0)}
+                  </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-amber-500" />
               </div>
@@ -270,79 +351,69 @@ export default function DashboardClientePage() {
               </Button>
             </div>
             
+            {loadingEventos ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : eventos.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 mb-4">Você ainda não criou nenhum evento</p>
+                <Button 
+                  onClick={() => router.push('/criar-evento')}
+                  className="bg-gradient-to-r from-amber-500 to-orange-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeiro Evento
+                </Button>
+              </div>
+            ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              {meusEventos.map((evento) => (
+              {eventos.map((evento: any) => (
                 <Card key={evento.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="h-32 bg-gray-100 relative">
-                    <img src={evento.imagem} alt={evento.nome} className="w-full h-full object-cover" />
+                    <img src={evento.image || '/evento-casamento.jpg'} alt={evento.name} className="w-full h-full object-cover" />
                     <Badge className="absolute top-2 right-2 bg-white/90">
-                      {evento.status === 'propostas' ? 'Aguardando' : 'Contratado'}
+                      {evento.status === 'OPEN' ? 'Aguardando Propostas' : evento.status}
                     </Badge>
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-gray-900">{evento.nome}</h3>
+                    <h3 className="font-semibold text-gray-900">{evento.name}</h3>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {new Date(evento.data).toLocaleDateString('pt-BR')}
+                        {evento.date ? new Date(evento.date).toLocaleDateString('pt-BR') : '-'}
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        {evento.pessoas} pessoas
+                        {evento.guestCount} pessoas
                       </span>
                     </div>
-                    {evento.status === 'propostas' ? (
+                    {evento.proposals && evento.proposals.length > 0 ? (
                       <div className="mt-4 flex items-center justify-between">
                         <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                          {evento.propostas} propostas recebidas
+                          {evento.proposals.length} propostas recebidas
                         </Badge>
                         <Button 
                           size="sm" 
                           className="bg-gradient-to-r from-amber-500 to-orange-600"
-                          onClick={() => router.push('/evento/123/propostas')}
+                          onClick={() => router.push(`/evento/${evento.id}/propostas`)}
                         >
                           Ver Propostas
                         </Button>
                       </div>
-                    ) : evento.status === 'concluido' ? (
-                      <div className="mt-4 flex items-center justify-between">
-                        <div>
-                          <span className="text-sm text-gray-600 block">{evento.profissional}</span>
-                          <span className="font-semibold text-amber-600">
-                            R$ {evento.valor?.toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                        {evento.avaliado ? (
-                          <Badge className="bg-green-100 text-green-700">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Avaliado
-                          </Badge>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            className="bg-gradient-to-r from-green-500 to-emerald-600"
-                            onClick={() => router.push('/avaliar')}
-                          >
-                            <Star className="w-4 h-4 mr-1" />
-                            Avaliar
-                          </Button>
-                        )}
-                      </div>
                     ) : (
-                      <div className="mt-4 flex items-center justify-between">
-                        <div>
-                          <span className="text-sm text-gray-600 block">{evento.profissional}</span>
-                          <span className="font-semibold text-amber-600">
-                            R$ {evento.valor?.toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                        <Badge className="bg-green-100 text-green-700">Contratado</Badge>
+                      <div className="mt-4">
+                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                          Nenhuma proposta ainda
+                        </Badge>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="propostas" className="space-y-4">

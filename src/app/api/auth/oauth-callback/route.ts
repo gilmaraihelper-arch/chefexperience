@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'chefexperience-secret-key';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      // No session, go to login
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Check if user has a profile
     const { prisma } = await import('@/lib/prisma');
     
-    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email }
     });
@@ -23,26 +23,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Check client profile
+    // Gerar token JWT para APIs
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, type: user.type },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     const clientProfile = await prisma.clientProfile.findUnique({
       where: { userId: user.id }
     });
     
     if (clientProfile) {
-      return NextResponse.redirect(new URL('/dashboard/cliente', request.url));
+      return NextResponse.redirect(new URL(`/dashboard/cliente?token=${token}`, request.url));
     }
 
-    // Check professional profile
     const professionalProfile = await prisma.professionalProfile.findUnique({
       where: { userId: user.id }
     });
     
     if (professionalProfile) {
-      return NextResponse.redirect(new URL('/dashboard/profissional', request.url));
+      return NextResponse.redirect(new URL(`/dashboard/profissional?token=${token}`, request.url));
     }
 
-    // No profile yet, go to complete registration
-    return NextResponse.redirect(new URL('/completar-cadastro', request.url));
+    return NextResponse.redirect(new URL(`/completar-cadastro?token=${token}`, request.url));
 
   } catch (error) {
     console.error('OAuth callback error:', error);
