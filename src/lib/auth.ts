@@ -4,7 +4,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
-// WORKAROUND: Forçar URL correta
 const FIXED_NEXTAUTH_URL = "https://chefexperience.vercel.app";
 process.env.NEXTAUTH_URL = FIXED_NEXTAUTH_URL;
 
@@ -61,43 +60,65 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    // JWT callback - simpler version
-    async jwt({ token, user, account }) {
-      // Primeiro login - adicionar dados ao token
-      if (user) {
+    // JWT callback - CRITICAL: This is where we ensure user exists in DB
+    async jwt({ token, user, account, trigger }) {
+      // Primeiro login com OAuth (account existe, user existe)
+      if (account?.provider === 'google' && user?.email) {
+        console.log("🔐 Google OAuth - primeiro login, verificando/criando usuário no banco...");
+        
+        // Buscar ou criar usuário
+        let dbUser = await prisma.user.findUnique({
+          where: { email: user.email.toLowerCase() }
+        });
+        
+        if (!dbUser) {
+          console.log("🔐 Criando usuário Google no banco...");
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email.toLowerCase(),
+              name: user.name || user.email.split('@')[0],
+              password: '', // OAuth users don't have password
+            }
+          });
+          console.log("✅ Usuário criado:", dbUser.id);
+        }
+        
+        // Atualizar token com dados do banco
+        token.id = dbUser.id;
+        token.email = dbUser.email;
+        token.name = dbUser.name;
+        token.type = dbUser.type;
+        
+        console.log("✅ Token populado com dados do banco:", dbUser.id, dbUser.type);
+      }
+      // Login com credentials
+      else if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        
-        // Se é OAuth, buscar type do banco
-        if (account?.provider === 'google') {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email! }
-          });
-          if (dbUser) {
-            token.type = dbUser.type;
-          }
-        } else {
-          token.type = (user as any).type;
-        }
+        token.type = (user as any).type;
       }
       
-      // Sempre buscar type atualizado do banco
+      // Sempre buscar type atualizado do banco (para cobrir casos de update de perfil)
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { type: true }
+          select: { type: true, email: true, name: true }
         });
         if (dbUser) {
           token.type = dbUser.type;
+          token.email = dbUser.email;
+          token.name = dbUser.name;
         }
       }
       
       return token;
     },
     
-    // Session callback - expor dados
+    // Session callback
     async session({ session, token }) {
+      console.log("👤 Session callback - populando sessão com token:", token.id, token.type);
+      
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).email = token.email;
