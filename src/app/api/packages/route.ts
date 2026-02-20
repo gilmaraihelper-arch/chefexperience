@@ -42,32 +42,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Apenas profissionais podem criar pacotes' }, { status: 403 })
     }
 
-    const professionalProfile = await prisma.professionalProfile.findUnique({
-      where: { userId: user.userId }
+    // Primeiro verificar se o usuário existe no banco
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      include: { professionalProfile: true }
     })
 
-    if (!professionalProfile) {
-      // Criar perfil automaticamente se não existir
-      console.log("🔄 Criando perfil profissional automaticamente para:", user.userId);
-      try {
-        const newProfile = await prisma.professionalProfile.create({
-          data: {
-            userId: user.userId,
-            description: 'Perfil criado automaticamente',
-            eventTypes: '["corporativo"]',
-            cuisineStyles: '["brasileira"]',
-            serviceTypes: '["buffet"]',
-            priceRanges: '[200,500]',
-            capacity: '50',
-          }
-        });
-        console.log("✅ Perfil profissional criado automaticamente:", newProfile.id);
-        return NextResponse.json({ error: 'Perfil criado. Tente criar o pacote novamente.' }, { status: 201 });
-      } catch (profileError) {
-        console.error("❌ Erro ao criar perfil:", profileError);
-        return NextResponse.json({ error: 'Perfil profissional não encontrado' }, { status: 404 });
-      }
+    if (!dbUser) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
     }
+
+    // Verificar se tem tipo PROFESSIONAL
+    if (dbUser.type !== 'PROFESSIONAL') {
+      return NextResponse.json({ error: 'Você precisa se cadastrar como profissional primeiro' }, { status: 403 })
+    }
+
+    // Verificar se tem perfil profissional
+    if (!dbUser.professionalProfile) {
+      return NextResponse.json({ error: 'Perfil profissional não encontrado. Complete seu cadastro em Cadastro > Profissional' }, { status: 404 })
+    }
+
+    const professionalProfile = dbUser.professionalProfile
 
     const body = await request.json()
     const { name, description, basePrice, minPeople, maxPeople, includes, menuFileUrl } = body
