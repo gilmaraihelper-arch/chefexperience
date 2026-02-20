@@ -15,6 +15,7 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
     error: "/login",
+    newUser: "/completar-cadastro/escolher-tipo",
   },
   providers: [
     GoogleProvider({
@@ -60,6 +61,25 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    // Redirect after login based on user type
+    async redirect({ url, baseUrl, token }) {
+      // If there's a callback URL, use it
+      if (url.includes('callbackUrl')) {
+        return url;
+      }
+      // If going to root, check user type and redirect to appropriate dashboard
+      if (url === baseUrl || url === '/' || url === '/login') {
+        if (token?.type === 'CLIENT') {
+          return `${baseUrl}/dashboard/cliente`;
+        } else if (token?.type === 'PROFESSIONAL') {
+          return `${baseUrl}/dashboard/profissional`;
+        }
+        // If no type, go to choose type page
+        return `${baseUrl}/completar-cadastro/escolher-tipo`;
+      }
+      return url;
+    },
+
     // JWT callback - CRITICAL: This is where we ensure user exists in DB
     async jwt({ token, user, account, trigger }) {
       // Primeiro login com OAuth (account existe, user existe)
