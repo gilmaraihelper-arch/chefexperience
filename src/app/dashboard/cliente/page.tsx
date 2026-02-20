@@ -131,6 +131,7 @@ export default function DashboardClientePage() {
   // Track auth state from localStorage
   const [userData, setUserData] = useState<any>({});
   const [hasToken, setHasToken] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   
   useEffect(() => {
     // Carregar dados do usuário do localStorage
@@ -141,6 +142,7 @@ export default function DashboardClientePage() {
       } catch (e) {}
     }
     setHasToken(!!localStorage.getItem('token'));
+    setAuthChecked(true);
   }, []);
 
   // Salvar token da URL (vindo do OAuth)
@@ -173,7 +175,6 @@ export default function DashboardClientePage() {
   useEffect(() => {
     async function fetchEventos() {
       // Permite se tem token localStorage OU sessão autenticada
-      if (status !== 'authenticated' && !hasToken) return;
       try {
         let token = localStorage.getItem('token');
         
@@ -206,11 +207,21 @@ export default function DashboardClientePage() {
           }
         }
         
-        if (!token) return;
+        if (!token) {
+          setLoadingEventos(false);
+          return;
+        }
         
         const res = await fetch('/api/events', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
+        if (!res.ok) {
+          console.error('Erro na API de eventos:', res.status);
+          setLoadingEventos(false);
+          return;
+        }
+        
         const data = await res.json();
         if (data.events) {
           setEventos(data.events);
@@ -222,7 +233,7 @@ export default function DashboardClientePage() {
       }
     }
     fetchEventos();
-  }, [status]);
+  }, [status, hasToken]);
 
   if (status === 'loading') {
     return (
@@ -233,8 +244,7 @@ export default function DashboardClientePage() {
   }
 
   // Permite acesso se tem token no localStorage OU sessão NextAuth
-  // Permite acesso se tem token no localStorage OU sessão NextAuth
-  if (!session && !hasToken) {
+  if (authChecked && !session && !hasToken) {
     return null;
   }
 
