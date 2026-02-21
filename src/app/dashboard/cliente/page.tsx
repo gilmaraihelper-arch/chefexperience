@@ -34,6 +34,7 @@ export default function DashboardClientePage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [propostasRecebidas, setPropostasRecebidas] = useState<any[]>([]);
   const [loadingPropostas, setLoadingPropostas] = useState(false);
+  const profissionaisFavoritos: any[] = [];
   
   useEffect(() => {
     // Carregar dados do usuário do localStorage
