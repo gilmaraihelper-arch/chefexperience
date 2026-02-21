@@ -111,10 +111,26 @@ export async function GET(request: NextRequest) {
       })
 
       // Calcular match para cada evento
-      const profCuisines = JSON.parse(professionalProfile.cuisineStyles || '[]')
-      const profServices = JSON.parse(professionalProfile.serviceTypes || '[]')
-      const profPrices = JSON.parse(professionalProfile.priceRanges || '[]')
-      const profCapacity = parseInt(professionalProfile.capacity || '0')
+      let profCuisines = []
+      let profServices = []
+      let profPrices = []
+      let profCapacity = 0
+      
+      try {
+        profCuisines = JSON.parse(professionalProfile.cuisineStyles || '[]')
+      } catch (e) { profCuisines = [] }
+      
+      try {
+        profServices = JSON.parse(professionalProfile.serviceTypes || '[]')
+      } catch (e) { profServices = [] }
+      
+      try {
+        profPrices = JSON.parse(professionalProfile.priceRanges || '[]')
+      } catch (e) { profPrices = [] }
+      
+      try {
+        profCapacity = parseInt(professionalProfile.capacity || '0')
+      } catch (e) { profCapacity = 0 }
 
       const eventsWithMatch = events.map(event => {
         let score = 0
@@ -160,6 +176,7 @@ export async function GET(request: NextRequest) {
           total += 20
         }
 
+        // Se não tem nenhum critério, dar match base de 50%
         const matchPercentage = total > 0 ? Math.round((score / total) * 100) : 50
 
         return {
