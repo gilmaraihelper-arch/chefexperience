@@ -73,6 +73,17 @@ export default function DashboardProfissionalPage() {
       const tokenFromUrl = urlParams.get('token');
       if (tokenFromUrl) {
         localStorage.setItem('token', tokenFromUrl);
+        // Buscar dados do usuário usando o token
+        fetch('/api/auth/token', {
+          headers: { Authorization: `Bearer ${tokenFromUrl}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
+            }
+          })
+          .catch(console.error);
         router.replace('/dashboard/profissional');
       }
     }

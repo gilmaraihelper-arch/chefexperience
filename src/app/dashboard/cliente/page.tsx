@@ -50,13 +50,24 @@ export default function DashboardClientePage() {
     setAuthChecked(true);
   }, []);
 
-  // Salvar token da URL (vindo do OAuth)
+  // Salvar token da URL (vindo do OAuth) e buscar dados do usuário
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const tokenFromUrl = urlParams.get('token');
       if (tokenFromUrl) {
         localStorage.setItem('token', tokenFromUrl);
+        // Buscar dados do usuário usando o token
+        fetch('/api/auth/token', {
+          headers: { Authorization: `Bearer ${tokenFromUrl}` }
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
+            }
+          })
+          .catch(console.error);
         router.replace('/dashboard/cliente');
       }
     }
