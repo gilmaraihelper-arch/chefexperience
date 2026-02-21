@@ -62,19 +62,14 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     // Redirect after login based on user type
-    async redirect({ url, baseUrl, token }) {
+    async redirect({ url, baseUrl }) {
       // If there's a callback URL, use it
       if (url.includes('callbackUrl')) {
         return url;
       }
-      // If going to root, check user type and redirect to appropriate dashboard
+      // Default redirect to choose type page
+      // User type checking is done client-side after login
       if (url === baseUrl || url === '/' || url === '/login') {
-        if (token?.type === 'CLIENT') {
-          return `${baseUrl}/dashboard/cliente`;
-        } else if (token?.type === 'PROFESSIONAL') {
-          return `${baseUrl}/dashboard/profissional`;
-        }
-        // If no type, go to choose type page
         return `${baseUrl}/completar-cadastro/escolher-tipo`;
       }
       return url;
