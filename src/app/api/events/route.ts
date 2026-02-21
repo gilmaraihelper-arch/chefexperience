@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'chefexperience-secret-key'
-const API_VERSION = '2.1-match'
+const API_VERSION = '2.2-match-fixed'
 
 function getUserFromToken(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
@@ -110,10 +110,9 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' }
       })
 
-      // Calcular match para cada evento
-      let profCuisines = []
-      let profServices = []
-      let profPrices = []
+      // Parse dos arrays do profissional
+      let profCuisines: string[] = []
+      let profServices: string[] = []
       let profCapacity = 0
       
       try {
@@ -125,29 +124,13 @@ export async function GET(request: NextRequest) {
       } catch (e) { profServices = [] }
       
       try {
-        profPrices = JSON.parse(professionalProfile.priceRanges || '[]')
-      } catch (e) { profPrices = [] }
-      
-      try {
         profCapacity = parseInt(professionalProfile.capacity || '0')
       } catch (e) { profCapacity = 0 }
 
-      // Calcular match para cada evento - VERSAO SIMPLIFICADA
+      // Calcular match para cada evento
       const eventsWithMatch = events.map(event => {
-        // Match base de 50% + calculos
+        // Match base de 50%
         let matchScore = 50
-        
-        // Parse dos arrays do profissional
-        let profCuisines: string[] = []
-        let profServices: string[] = []
-        
-        try {
-          profCuisines = JSON.parse(professionalProfile.cuisineStyles || '[]')
-        } catch(e) { profCuisines = [] }
-        
-        try {
-          profServices = JSON.parse(professionalProfile.serviceTypes || '[]')
-        } catch(e) { profServices = [] }
         
         // Parse dos arrays do evento
         let eventCuisines: string[] = []
@@ -163,18 +146,17 @@ export async function GET(request: NextRequest) {
         
         // Calcular match de estilos (max +25%)
         if (eventCuisines.length > 0 && profCuisines.length > 0) {
-          const matches = eventCuisines.filter(c => profCuisines.includes(c)).length
+          const matches = eventCuisines.filter((c: string) => profCuisines.includes(c)).length
           matchScore += (matches / eventCuisines.length) * 25
         }
         
         // Calcular match de servicos (max +15%)
         if (eventServices.length > 0 && profServices.length > 0) {
-          const matches = eventServices.filter(s => profServices.includes(s)).length
+          const matches = eventServices.filter((s: string) => profServices.includes(s)).length
           matchScore += (matches / eventServices.length) * 15
         }
         
         // Capacidade (max +10%)
-        const profCapacity = parseInt(professionalProfile.capacity || '0')
         if (profCapacity > 0 && event.guestCount && profCapacity >= event.guestCount) {
           matchScore += 10
         }
@@ -194,58 +176,6 @@ export async function GET(request: NextRequest) {
           client: event.client,
           _count: event._count,
           match: Math.min(100, Math.round(matchScore))
-        }
-      })
-
-        // Match de tipo de serviço (25%)
-        if (event.serviceTypes) {
-          const eventServices = JSON.parse(event.serviceTypes || '[]')
-          const serviceMatch = eventServices.filter((s: string) => profServices.includes(s)).length
-          if (eventServices.length > 0) {
-            score += (serviceMatch / eventServices.length) * 25
-          }
-          total += 25
-        }
-
-        // Match de faixa de preço (25%)
-        if (event.priceRange) {
-          const priceMap: Record<string, number> = { 'popular': 1, 'medio': 2, 'premium': 3, 'luxo': 4, 'executivo': 3 }
-          const eventPrice = priceMap[event.priceRange.toLowerCase()] || 2
-          const profPrice = profPrices.length > 0 ? Math.round(profPrices.reduce((a: number, b: number) => a + b, 0) / profPrices.length / 100) : 2
-          const priceDiff = Math.abs(eventPrice - profPrice)
-          score += Math.max(0, 25 - priceDiff * 8)
-          total += 25
-        }
-
-        // Match de capacidade (20%)
-        if (event.guestCount && profCapacity > 0) {
-          if (profCapacity >= event.guestCount) {
-            score += 20
-          } else {
-            score += (profCapacity / event.guestCount) * 20
-          }
-          total += 20
-        }
-
-        // Se não tem nenhum critério, dar match base de 50%
-        const matchPercentage = total > 0 ? Math.round((score / total) * 100) : 50
-
-        // Retornar objeto com match
-        return {
-          id: event.id,
-          name: event.name,
-          eventType: event.eventType,
-          date: event.date,
-          guestCount: event.guestCount,
-          city: event.city,
-          state: event.state,
-          priceRange: event.priceRange,
-          cuisineStyles: event.cuisineStyles,
-          serviceTypes: event.serviceTypes,
-          status: event.status,
-          client: event.client,
-          _count: event._count,
-          match: matchPercentage
         }
       })
 
