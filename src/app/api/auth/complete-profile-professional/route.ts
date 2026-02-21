@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
         const token = authHeader.substring(7);
         try {
           const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'default-secret') as any;
-          if (decoded?.userId) {
-            const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+          if (decoded?.id) {
+            const user = await prisma.user.findUnique({ where: { id: decoded.id } });
             if (user) {
               session = { user: { email: user.email, name: user.name } } as any;
             }
