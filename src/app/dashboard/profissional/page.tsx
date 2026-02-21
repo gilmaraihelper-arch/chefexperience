@@ -424,7 +424,7 @@ export default function DashboardProfissionalPage() {
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {new Date(evento.date || evento.data).toLocaleDateString('pt-BR')}
+                            {(evento.date || evento.data) ? new Date(evento.date || evento.data).toLocaleDateString('pt-BR') : 'Data não informada'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
@@ -432,7 +432,7 @@ export default function DashboardProfissionalPage() {
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
-                            {evento.city ? `${evento.city}, ${evento.state}` : `${evento.local} • ${evento.distancia}`}
+                            {evento.city ? `${evento.city}, ${evento.state}` : (evento.local ? `${evento.local} • ${evento.distancia || '0km'}` : 'Local não informado')}
                           </span>
                           <Badge variant="secondary">{evento.priceRange || faixaPrecoLabels[evento.faixaPreco]}</Badge>
                           {(evento.hasKitchen || evento.possuiCozinha) && (
@@ -442,7 +442,7 @@ export default function DashboardProfissionalPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {(evento.cuisineStyles ? JSON.parse(evento.cuisineStyles) : evento.estilosCulinaria).map((estilo: string) => (
+                          {(evento.cuisineStyles ? JSON.parse(evento.cuisineStyles || '[]') : evento.estilosCulinaria || []).map((estilo: string) => (
                             <span key={estilo} className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                               {estilo}
                             </span>
