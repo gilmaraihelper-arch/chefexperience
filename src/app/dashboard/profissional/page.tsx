@@ -190,8 +190,8 @@ export default function DashboardProfissionalPage() {
     }
   }, []);
   
-  const userName = (session?.user?.name || userData.name || 'Chef');
-  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+  const userName = (session?.user?.name || userData?.name || 'Chef');
+  const userInitials = userName?.split(' ')?.map((n: string) => n[0])?.join('')?.substring(0, 2)?.toUpperCase() || 'CH';
 
   // Define missing variables that were in hardcoded data
   const faixaPrecoLabels: Record<string, string> = {
