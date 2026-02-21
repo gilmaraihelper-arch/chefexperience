@@ -336,9 +336,15 @@ export default function CadastroProfissionalPage() {
       console.log('📝 Enviando POST para:', url);
       console.log('📝 Body completo:', JSON.stringify(body, null, 2));
 
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
         body: JSON.stringify(body),
       });
 

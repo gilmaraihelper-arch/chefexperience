@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,26 @@ export async function POST(request: NextRequest) {
   console.log("📝 API complete-profile-professional INICIADA");
   
   try {
-    const session = await getServerSession(authOptions);
+    let session = await getServerSession(authOptions);
+    
+    // Fallback: Check for Bearer token if no session
+    if (!session?.user?.email) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'default-secret') as any;
+          if (decoded?.userId) {
+            const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+            if (user) {
+              session = { user: { email: user.email, name: user.name } } as any;
+            }
+          }
+        } catch (e) {
+          console.log('Token inválido:', e);
+        }
+      }
+    }
     
     if (!session?.user?.email) {
       return NextResponse.json(
