@@ -1202,7 +1202,7 @@ export default function CadastroProfissionalPage() {
               </span>
             </div>
             <div className="text-sm text-gray-500">
-              Cadastro de Profissional
+              Cadastro de Profissional v3
             </div>
           </div>
         </div>
