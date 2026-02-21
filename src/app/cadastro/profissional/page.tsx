@@ -81,7 +81,7 @@ const capacidade = [
 export default function CadastroProfissionalPage() {
   const router = useRouter();
   const { data: session, status, update: updateSession } = useSession();
-  const isOAuth = status === 'authenticated' && !!session?.user?.email;
+  const isOAuth = status === "authenticated" && session && session.user && !!session.user.email;
   
   // Log quando a página carrega
   useEffect(() => {
@@ -249,6 +249,16 @@ export default function CadastroProfissionalPage() {
   ];
 
   const handleSubmit = async () => {
+    if (!formData.nome && !formData.razaoSocial) {
+      setError("Nome é obrigatório");
+      setLoading(false);
+      return;
+    }
+    if (!formData.telefone) {
+      setError("Telefone é obrigatório");
+      setLoading(false);
+      return;
+    }
     console.log('📝 ==========================================');
     console.log('📝 HANDLE SUBMIT INICIADO');
     console.log('📝 ==========================================');
