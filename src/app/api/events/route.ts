@@ -132,23 +132,70 @@ export async function GET(request: NextRequest) {
         profCapacity = parseInt(professionalProfile.capacity || '0')
       } catch (e) { profCapacity = 0 }
 
-      console.log('Calculating match for', events.length, 'events')
-
+      // Calcular match para cada evento - VERSAO SIMPLIFICADA
       const eventsWithMatch = events.map(event => {
-        let score = 0
-        let total = 0
-
-        // Match de estilo culinário (30%)
-        if (event.cuisineStyles) {
-          try {
-            const eventCuisines = JSON.parse(event.cuisineStyles || '[]')
-            const cuisineMatch = eventCuisines.filter((c: string) => profCuisines.includes(c)).length
-            if (eventCuisines.length > 0) {
-              score += (cuisineMatch / eventCuisines.length) * 30
-            }
-            total += 30
-          } catch (e) {}
+        // Match base de 50% + calculos
+        let matchScore = 50
+        
+        // Parse dos arrays do profissional
+        let profCuisines: string[] = []
+        let profServices: string[] = []
+        
+        try {
+          profCuisines = JSON.parse(professionalProfile.cuisineStyles || '[]')
+        } catch(e) { profCuisines = [] }
+        
+        try {
+          profServices = JSON.parse(professionalProfile.serviceTypes || '[]')
+        } catch(e) { profServices = [] }
+        
+        // Parse dos arrays do evento
+        let eventCuisines: string[] = []
+        let eventServices: string[] = []
+        
+        try {
+          eventCuisines = JSON.parse(event.cuisineStyles || '[]')
+        } catch(e) { eventCuisines = [] }
+        
+        try {
+          eventServices = JSON.parse(event.serviceTypes || '[]')
+        } catch(e) { eventServices = [] }
+        
+        // Calcular match de estilos (max +25%)
+        if (eventCuisines.length > 0 && profCuisines.length > 0) {
+          const matches = eventCuisines.filter(c => profCuisines.includes(c)).length
+          matchScore += (matches / eventCuisines.length) * 25
         }
+        
+        // Calcular match de servicos (max +15%)
+        if (eventServices.length > 0 && profServices.length > 0) {
+          const matches = eventServices.filter(s => profServices.includes(s)).length
+          matchScore += (matches / eventServices.length) * 15
+        }
+        
+        // Capacidade (max +10%)
+        const profCapacity = parseInt(professionalProfile.capacity || '0')
+        if (profCapacity > 0 && event.guestCount && profCapacity >= event.guestCount) {
+          matchScore += 10
+        }
+        
+        return {
+          id: event.id,
+          name: event.name,
+          eventType: event.eventType,
+          date: event.date,
+          guestCount: event.guestCount,
+          city: event.city,
+          state: event.state,
+          priceRange: event.priceRange,
+          cuisineStyles: event.cuisineStyles,
+          serviceTypes: event.serviceTypes,
+          status: event.status,
+          client: event.client,
+          _count: event._count,
+          match: Math.min(100, Math.round(matchScore))
+        }
+      })
 
         // Match de tipo de serviço (25%)
         if (event.serviceTypes) {
