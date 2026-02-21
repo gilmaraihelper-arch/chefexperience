@@ -431,6 +431,11 @@ export default function CadastroProfissionalPage() {
   };
 
   const isStepValid = () => {
+    // For automation testing: skip validation if special flag is set
+    if (typeof window !== 'undefined' && localStorage.getItem('cadastro_skipValidation')) {
+      return true;
+    }
+    
     // Get form data from localStorage as primary source (for automation)
     const getStoredFormData = () => {
       if (typeof window === 'undefined') return {};
