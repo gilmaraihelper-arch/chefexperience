@@ -179,11 +179,23 @@ export async function GET(request: NextRequest) {
         // Se não tem nenhum critério, dar match base de 50%
         const matchPercentage = total > 0 ? Math.round((score / total) * 100) : 50
 
-        // Criar novo objeto com match
-        const eventWithMatch = JSON.parse(JSON.stringify(event))
-        eventWithMatch.match = matchPercentage
-        
-        return eventWithMatch
+        // Retornar objeto com match
+        return {
+          id: event.id,
+          name: event.name,
+          eventType: event.eventType,
+          date: event.date,
+          guestCount: event.guestCount,
+          city: event.city,
+          state: event.state,
+          priceRange: event.priceRange,
+          cuisineStyles: event.cuisineStyles,
+          serviceTypes: event.serviceTypes,
+          status: event.status,
+          client: event.client,
+          _count: event._count,
+          match: matchPercentage
+        }
       })
 
       return NextResponse.json({ events: eventsWithMatch, version: API_VERSION })
