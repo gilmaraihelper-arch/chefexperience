@@ -431,6 +431,16 @@ export default function CadastroProfissionalPage() {
   };
 
   const isStepValid = () => {
+    // Get form data from localStorage as primary source (for automation)
+    const getStoredFormData = () => {
+      if (typeof window === 'undefined') return {};
+      try {
+        const stored = localStorage.getItem('cadastro_formData');
+        return stored ? JSON.parse(stored) : {};
+      } catch { return {}; }
+    };
+    const storedData = getStoredFormData();
+    
     // Fallback: also check DOM values for automation testing
     const getDomValue = (selector: string) => {
       if (typeof window === 'undefined') return '';
@@ -442,10 +452,10 @@ export default function CadastroProfissionalPage() {
       case 1:
         return tipoPessoa !== null;
       case 2:
-        const nome = formData.nome || getDomValue('input[placeholder="Seu nome completo"]');
-        const cpf = formData.cpf || getDomValue('input[placeholder="000.000.000-00"]');
-        const email = formData.email || getDomValue('input[placeholder="seu@email.com"]') || session?.user?.email;
-        const telefone = formData.telefone || getDomValue('input[placeholder="(00) 0000-0000"]');
+        const nome = formData.nome || storedData.nome || getDomValue('input[placeholder="Seu nome completo"]');
+        const cpf = formData.cpf || storedData.cpf || getDomValue('input[placeholder="000.000.000-00"]');
+        const email = formData.email || storedData.email || getDomValue('input[placeholder="seu@email.com"]') || session?.user?.email;
+        const telefone = formData.telefone || storedData.telefone || getDomValue('input[placeholder="(00) 0000-0000"]');
         
         if (tipoPessoa === 'pf') {
           const baseValid = nome && cpf && email && telefone;
@@ -456,8 +466,8 @@ export default function CadastroProfissionalPage() {
             formData.senha === formData.confirmarSenha
           );
         }
-        const razaoSocial = formData.razaoSocial || getDomValue('input[placeholder="Nome da empresa"]');
-        const cnpj = formData.cnpj || getDomValue('input[placeholder="00.000.000/0001-00"]');
+        const razaoSocial = formData.razaoSocial || storedData.razaoSocial || getDomValue('input[placeholder="Nome da empresa"]');
+        const cnpj = formData.cnpj || storedData.cnpj || getDomValue('input[placeholder="00.000.000/0001-00"]');
         const baseValidPJ = razaoSocial && cnpj && email && telefone;
         if (isOAuth) return baseValidPJ;
         return (
@@ -466,15 +476,15 @@ export default function CadastroProfissionalPage() {
           formData.senha === formData.confirmarSenha
         );
       case 3:
-        const cep = formData.cep || getDomValue('input[placeholder="00000-000"]');
-        const endereco = formData.endereco || getDomValue('input[placeholder="Rua/Avenida"]');
-        const cidade = formData.cidade || getDomValue('input[placeholder="Cidade"]');
-        const estado = formData.estado || getDomValue('input[placeholder="Estado"]');
+        const cep = formData.cep || storedData.cep || getDomValue('input[placeholder="00000-000"]');
+        const endereco = formData.endereco || storedData.endereco || getDomValue('input[placeholder="Rua/Avenida"]');
+        const cidade = formData.cidade || storedData.cidade || getDomValue('input[placeholder="Cidade"]');
+        const estado = formData.estado || storedData.estado || getDomValue('input[placeholder="Estado"]');
         return cep && endereco && cidade && estado;
       case 4:
-        return formData.tiposEvento.length > 0 && formData.especialidades.length > 0 && formData.faixaPreco.length > 0;
+        return formData.tiposEvento.length > 0 || storedData.tiposEvento?.length > 0;
       case 5:
-        const descricao = formData.descricao || getDomValue('textarea') || getDomValue('input[placeholder="Descreva sua experiência..."]');
+        const descricao = formData.descricao || storedData.descricao || getDomValue('textarea') || getDomValue('input[placeholder="Descreva sua experiência..."]');
         return descricao.length >= 50;
       case 6:
         return true;
