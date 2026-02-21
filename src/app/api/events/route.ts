@@ -161,6 +161,16 @@ export async function GET(request: NextRequest) {
           matchScore += 10
         }
         
+        // Calcular orcamento max baseado no priceRange
+        const priceRangeMap: Record<string, number> = {
+          'popular': 3000,
+          'medio': 8000,
+          'premium': 15000,
+          'luxo': 30000,
+          'executivo': 20000
+        }
+        const maxBudget = priceRangeMap[event.priceRange?.toLowerCase() || 'medio'] || 8000
+        
         return {
           id: event.id,
           name: event.name,
@@ -170,6 +180,7 @@ export async function GET(request: NextRequest) {
           city: event.city,
           state: event.state,
           priceRange: event.priceRange,
+          maxBudget: maxBudget,
           cuisineStyles: event.cuisineStyles,
           serviceTypes: event.serviceTypes,
           status: event.status,

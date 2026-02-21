@@ -495,7 +495,7 @@ export default function DashboardProfissionalPage() {
                         <div className="text-right">
                           <p className="text-sm text-gray-500">Orçamento máx.</p>
                           <p className="text-xl font-bold text-amber-600">
-                            R$ {(evento.orcamentoMax || 0).toLocaleString('pt-BR')}
+                            R$ {(evento.maxBudget || 0).toLocaleString('pt-BR')}
                           </p>
                         </div>
                         <Button 
