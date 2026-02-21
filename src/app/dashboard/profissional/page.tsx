@@ -670,6 +670,7 @@ export default function DashboardProfissionalPage() {
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="contratados" className="space-y-4">
