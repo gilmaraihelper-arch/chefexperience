@@ -67,10 +67,9 @@ export const authOptions: NextAuthOptions = {
       if (url.includes('callbackUrl')) {
         return url;
       }
-      // Default redirect to choose type page
-      // User type checking is done client-side after login
+      // After OAuth login, go to oauth-callback to check user type
       if (url === baseUrl || url === '/' || url === '/login') {
-        return `${baseUrl}/completar-cadastro/escolher-tipo`;
+        return `${baseUrl}/api/auth/oauth-callback`;
       }
       return url;
     },
