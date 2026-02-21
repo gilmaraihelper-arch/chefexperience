@@ -110,7 +110,65 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' }
       })
 
-      return NextResponse.json({ events, version: API_VERSION })
+      // Calcular match para cada evento
+      const profCuisines = JSON.parse(professionalProfile.cuisineStyles || '[]')
+      const profServices = JSON.parse(professionalProfile.serviceTypes || '[]')
+      const profPrices = JSON.parse(professionalProfile.priceRanges || '[]')
+      const profCapacity = parseInt(professionalProfile.capacity || '0')
+
+      const eventsWithMatch = events.map(event => {
+        let score = 0
+        let total = 0
+
+        // Match de estilo culinário (30%)
+        if (event.cuisineStyles) {
+          const eventCuisines = JSON.parse(event.cuisineStyles || '[]')
+          const cuisineMatch = eventCuisines.filter((c: string) => profCuisines.includes(c)).length
+          if (eventCuisines.length > 0) {
+            score += (cuisineMatch / eventCuisines.length) * 30
+          }
+          total += 30
+        }
+
+        // Match de tipo de serviço (25%)
+        if (event.serviceTypes) {
+          const eventServices = JSON.parse(event.serviceTypes || '[]')
+          const serviceMatch = eventServices.filter((s: string) => profServices.includes(s)).length
+          if (eventServices.length > 0) {
+            score += (serviceMatch / eventServices.length) * 25
+          }
+          total += 25
+        }
+
+        // Match de faixa de preço (25%)
+        if (event.priceRange) {
+          const priceMap: Record<string, number> = { 'popular': 1, 'medio': 2, 'premium': 3, 'luxo': 4, 'executivo': 3 }
+          const eventPrice = priceMap[event.priceRange.toLowerCase()] || 2
+          const profPrice = profPrices.length > 0 ? Math.round(profPrices.reduce((a: number, b: number) => a + b, 0) / profPrices.length / 100) : 2
+          const priceDiff = Math.abs(eventPrice - profPrice)
+          score += Math.max(0, 25 - priceDiff * 8)
+          total += 25
+        }
+
+        // Match de capacidade (20%)
+        if (event.guestCount && profCapacity > 0) {
+          if (profCapacity >= event.guestCount) {
+            score += 20
+          } else {
+            score += (profCapacity / event.guestCount) * 20
+          }
+          total += 20
+        }
+
+        const matchPercentage = total > 0 ? Math.round((score / total) * 100) : 50
+
+        return {
+          ...event,
+          match: matchPercentage
+        }
+      })
+
+      return NextResponse.json({ events: eventsWithMatch, version: API_VERSION })
     }
 
     const clientProfile = await prisma.clientProfile.findUnique({
