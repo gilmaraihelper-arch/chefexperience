@@ -85,7 +85,7 @@ export async function PUT(
         }),
       ])
 
-      // Notificar profissional que a proposta foi aceita
+      // Notificar profissional que a proposta foi aceita (email + in-app)
       try {
         const professional = await prisma.professionalProfile.findUnique({
           where: { id: proposal.professionalId },
@@ -99,6 +99,7 @@ export async function PUT(
             where: { id: user.userId }
           });
           
+          // Email
           const template = emailTemplates.proposalAccepted({
             professionalName: professional.user.name,
             clientName: client?.name || 'Cliente',
@@ -114,6 +115,22 @@ export async function PUT(
           });
           
           console.log('📧 Email de proposta aceita enviado para:', professional.user.email);
+          
+          // Notificação in-app
+          const { createNotification } = await import('@/lib/notifications');
+          await createNotification({
+            userId: professional.user.id,
+            type: 'PROPOSAL_ACCEPTED',
+            title: 'Proposta aceita! 🎉',
+            message: `${client?.name || 'Cliente'} aceitou sua proposta de R$ ${proposal.totalPrice.toLocaleString('pt-BR')} para o evento "${proposal.event.name}"`,
+            data: {
+              proposalId: proposalId,
+              eventId: proposal.eventId,
+              clientName: client?.name || 'Cliente',
+              value: proposal.totalPrice
+            },
+            actionUrl: `/dashboard/profissional`
+          });
         }
       } catch (notifyError) {
         console.error('Erro ao notificar profissional:', notifyError);

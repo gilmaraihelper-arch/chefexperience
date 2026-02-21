@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { NotificationBell } from '@/components/notifications';
 import { useSession } from 'next-auth/react';
 import { 
   ChefHat, 
@@ -24,7 +25,8 @@ import {
   CheckCircle2,
   Send,
   Settings,
-  Eye
+  Eye,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -355,6 +357,7 @@ export default function DashboardProfissionalPage() {
             </button>
             
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
                 <Briefcase className="w-4 h-4" />
                 <span>Plano Profissional</span>

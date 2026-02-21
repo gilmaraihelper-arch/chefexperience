@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Notificar cliente sobre nova proposta
+    // Notificar cliente sobre nova proposta (email + in-app)
     try {
       const event = await prisma.event.findUnique({
         where: { id: eventId },
@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (event?.client?.user) {
+        // Email
         const { sendEmail, emailTemplates } = await import('@/lib/email');
         
         const template = emailTemplates.proposalReceived({
@@ -88,6 +89,22 @@ export async function POST(request: NextRequest) {
         });
         
         console.log('📧 Email de nova proposta enviado para:', event.client.user.email);
+        
+        // Notificação in-app
+        const { createNotification } = await import('@/lib/notifications');
+        await createNotification({
+          userId: event.client.user.id,
+          type: 'NEW_PROPOSAL',
+          title: 'Nova proposta recebida! 🎉',
+          message: `${professionalProfile.user.name} enviou uma proposta de R$ ${parseFloat(totalPrice).toLocaleString('pt-BR')} para seu evento "${event.name}"`,
+          data: {
+            proposalId: proposal.id,
+            eventId: eventId,
+            professionalName: professionalProfile.user.name,
+            value: parseFloat(totalPrice)
+          },
+          actionUrl: `/evento/${eventId}/propostas`
+        });
       }
     } catch (notifyError) {
       console.error('Erro ao notificar cliente:', notifyError);

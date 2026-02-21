@@ -21,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+import { NotificationBell } from '@/components/notifications';
+
 export default function DashboardClientePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -209,6 +211,7 @@ export default function DashboardClientePage() {
             </Link>
             
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <Button 
                 variant="ghost" 
                 size="sm"
