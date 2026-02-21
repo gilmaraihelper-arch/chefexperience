@@ -179,10 +179,11 @@ export async function GET(request: NextRequest) {
         // Se não tem nenhum critério, dar match base de 50%
         const matchPercentage = total > 0 ? Math.round((score / total) * 100) : 50
 
-        return {
-          ...event,
-          match: matchPercentage
-        }
+        // Criar novo objeto com match
+        const eventWithMatch = JSON.parse(JSON.stringify(event))
+        eventWithMatch.match = matchPercentage
+        
+        return eventWithMatch
       })
 
       return NextResponse.json({ events: eventsWithMatch, version: API_VERSION })
