@@ -28,15 +28,12 @@ export default function DashboardClientePage() {
   const [eventos, setEventos] = useState<any[]>([]);
   const [loadingEventos, setLoadingEventos] = useState(true);
   
-  // Empty arrays - data comes from API
-  const meusEventos: any[] = [];
-  const propostasRecebidas: any[] = [];
-  const profissionaisFavoritos: any[] = [];
-
   // Track auth state from localStorage
   const [userData, setUserData] = useState<any>({});
   const [hasToken, setHasToken] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [propostasRecebidas, setPropostasRecebidas] = useState<any[]>([]);
+  const [loadingPropostas, setLoadingPropostas] = useState(false);
   
   useEffect(() => {
     // Carregar dados do usuário do localStorage
@@ -149,6 +146,36 @@ export default function DashboardClientePage() {
       }
     }
     fetchEventos();
+  }, [status, hasToken]);
+
+  // Buscar propostas recebidas
+  useEffect(() => {
+    async function fetchPropostas() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        setLoadingPropostas(true);
+        const res = await fetch('/api/proposals', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+          console.error('Erro na API de propostas:', res.status);
+          return;
+        }
+        
+        const data = await res.json();
+        if (data.proposals) {
+          setPropostasRecebidas(data.proposals);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar propostas:', err);
+      } finally {
+        setLoadingPropostas(false);
+      }
+    }
+    fetchPropostas();
   }, [status, hasToken]);
 
   if (status === 'loading') {
@@ -274,7 +301,7 @@ export default function DashboardClientePage() {
         <Tabs value={abaAtiva} onValueChange={setAbaAtiva}>
           <TabsList className="mb-6">
             <TabsTrigger value="eventos">Meus Eventos</TabsTrigger>
-            <TabsTrigger value="propostas">Propostas (5)</TabsTrigger>
+            <TabsTrigger value="propostas">Propostas ({propostasRecebidas.length})</TabsTrigger>
             <TabsTrigger value="favoritos">Favoritos</TabsTrigger>
             <TabsTrigger value="contratados">Contratados</TabsTrigger>
           </TabsList>
@@ -359,48 +386,61 @@ export default function DashboardClientePage() {
 
           <TabsContent value="propostas" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Propostas Recebidas</h2>
-            <div className="space-y-3">
-              {propostasRecebidas.map((proposta) => (
-                <Card key={proposta.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold">
-                        {proposta.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{proposta.profissional}</h3>
-                            <p className="text-sm text-gray-500">{proposta.evento}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                              <span className="text-sm font-medium">{proposta.rating}</span>
-                              <span className="text-sm text-gray-400">({proposta.avaliacoes} avaliações)</span>
+            {loadingPropostas ? (
+              <div className="flex justify-center py-8">
+                <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : propostasRecebidas.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Nenhuma proposta recebida ainda.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {propostasRecebidas.map((proposta) => (
+                  <Card key={proposta.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold">
+                          {proposta.professional?.user?.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'CH'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{proposta.professional?.user?.name || 'Chef'}</h3>
+                              <p className="text-sm text-gray-500">{proposta.event?.name || 'Evento'}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                <span className="text-sm font-medium">4.8</span>
+                                <span className="text-sm text-gray-400">(12 avaliações)</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-amber-600">
+                                R$ {(proposta.totalPrice || 0).toLocaleString('pt-BR')}
+                              </p>
+                              <p className="text-xs text-gray-400">Enviada em {proposta.sentAt ? new Date(proposta.sentAt).toLocaleDateString('pt-BR') : '-'}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-amber-600">
-                              R$ {proposta.valor.toLocaleString('pt-BR')}
-                            </p>
-                            <p className="text-xs text-gray-400">Enviada em {new Date(proposta.dataEnvio).toLocaleDateString('pt-BR')}</p>
+                          {proposta.message && (
+                            <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{proposta.message}</p>
+                          )}
+                          <div className="flex gap-2 mt-4">
+                            <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600">
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
+                              Aceitar Proposta
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <MessageSquare className="w-4 h-4 mr-1" />
+                              Conversar
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-4">
-                          <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600">
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Aceitar Proposta
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <MessageSquare className="w-4 h-4 mr-1" />
-                            Conversar
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="favoritos" className="space-y-4">

@@ -292,16 +292,47 @@ export default function DashboardProfissionalPage() {
     }
   };
 
-  const handleSubmitOrcamento = () => {
-    setShowOrcamentoModal(false);
-    alert('Orçamento enviado com sucesso!');
-    setOrcamentoData({
-      valor: '',
-      mensagem: '',
-      usarPacote: false,
-      pacoteSelecionado: '',
-      anexarArquivo: false,
-    });
+  const handleSubmitOrcamento = async () => {
+    if (!eventoSelecionado) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Você precisa estar logado para enviar propostas');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/proposals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eventId: eventoSelecionado.id,
+          totalPrice: parseFloat(orcamentoData.valor),
+          message: orcamentoData.mensagem,
+        })
+      });
+
+      if (response.ok) {
+        alert('Orçamento enviado com sucesso!');
+        setOrcamentoData({
+          valor: '',
+          mensagem: '',
+          usarPacote: false,
+          pacoteSelecionado: '',
+          anexarArquivo: false,
+        });
+        setShowOrcamentoModal(false);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Erro ao enviar proposta');
+      }
+    } catch (err) {
+      console.error('Erro ao enviar proposta:', err);
+      alert('Erro ao enviar proposta');
+    }
   };
 
   const handleNavigateHome = () => {
