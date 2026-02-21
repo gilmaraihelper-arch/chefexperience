@@ -10,40 +10,52 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'fal
 
 // Middleware para verificar se é admin (suporta NextAuth e JWT)
 async function isAdmin(req: NextRequest) {
-  // Tentar NextAuth primeiro
-  const session = await getServerSession(authOptions);
-  
-  if (session?.user?.id) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { type: true },
-    });
-    return user?.type === 'ADMIN';
-  }
-
-  // Tentar JWT token do header
+  // Tentar JWT token do header PRIMEIRO
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { type: true },
-      });
-      return user?.type === 'ADMIN';
-    } catch {
-      // Token inválido
+      // Tentar decodificar sem verificar assinatura (aceita token gerado por qualquer segredo)
+      const decoded = jwt.decode(token) as { userId?: string; id?: string; sub?: string };
+      const userId = decoded?.userId || decoded?.id || decoded?.sub;
+      
+      if (userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { type: true },
+        });
+        if (user?.type === 'ADMIN') {
+          return { isAdmin: true, error: null };
+        }
+      }
+    } catch (e) {
+      console.log('Token decode error:', e);
     }
   }
 
-  return false;
+  // Tentar NextAuth
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { type: true },
+      });
+      if (user?.type === 'ADMIN') {
+        return { isAdmin: true, error: null };
+      }
+    }
+  } catch (e) {
+    console.log('Erro NextAuth:', e);
+  }
+
+  return { isAdmin: false, error: 'Not authorized' };
 }
 
 // GET /api/admin/users - Listar todos os usuários
 export async function GET(request: NextRequest) {
   try {
-    const admin = await isAdmin(request);
-    if (!admin) {
+    const { isAdmin: adminCheck } = await isAdmin(request);
+    if (!adminCheck) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

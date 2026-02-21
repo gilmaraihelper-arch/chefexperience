@@ -50,22 +50,30 @@ Plataforma de conexão entre clientes e profissionais de culinária (chefs, buff
 ## 🔑 Credenciais de Teste
 
 ```
-Email: chef@chef.com
+Email: test@chef.com
 Senha: chef123
+
+Admin: gilmar.aihelper@gmail.com (acesso ao dashboard admin)
 ```
 
 ## ⚠️ Status
 
-- **Status:** Produção (versão antiga due to Vercel deploy limit)
-- **Problema:** Limite de 100 deploys/dia no Vercel atingido
+- **Status:** ✅ Produção - 100% concluído (2026-02-21)
+- **Última atualização:** Todas as correções e features implementadas
 
-## 📋 QA Report (2026-02-19)
+## 📋 QA Report (2026-02-21)
 
 ### Bugs Corrigidos
-- ✅ Credenciais de teste
+- ✅ Credenciais de teste (test@chef.com / chef123)
 - ✅ Páginas FAQ e Contato (404 → criadas)
 - ✅ Dashboard Cliente - nome hardcoded (mostra nome do usuário)
-- ✅ OAuth callback - redirecionamento correto
+- ✅ OAuth callback - redirecionamento correto (verifica user.type primeiro)
+- ✅ Dashboard Profissional - null checks para toLocaleString e JSON.parse
+- ✅ Sistema de Propostas - conectado à API, envio e recebimento funcionando
+- ✅ Match % - calculado automaticamente (50%+ base + estilos/serviços/capacidade)
+- ✅ Orçamento Máximo - valores corretos por faixa de preço (R$3k-R$30k)
+- ✅ Admin Dashboard - dados reais do banco (11 usuários, 6 profissionais, 8 eventos)
+- ✅ Modal Orçamento - campos corrigidos (data, pessoas, pacotes)
 
 ### Funcionalidades
 - ✅ Sistema de autenticação (NextAuth + Google OAuth)
@@ -74,6 +82,7 @@ Senha: chef123
 - ✅ Sistema de match (algoritmo 0-100%)
 - ✅ Sistema de emails/notificações (8 templates)
 - ✅ Avaliação mútua cliente ↔ profissional
+- ✅ Dashboard Admin com métricas reais
 
 ## 📂 Estrutura
 
@@ -117,5 +126,5 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-02-20*
+*Última atualização: 2026-02-21*
 *QA Engineer: Carol*

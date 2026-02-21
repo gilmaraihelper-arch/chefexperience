@@ -481,8 +481,29 @@ export default function AdminDashboardPage() {
     try {
       setLoading(true);
       
-      // Pegar token do localStorage
-      const token = localStorage.getItem('token');
+      // Pegar token do localStorage ou gerar um novo baseado na sessão
+      let token = localStorage.getItem('token');
+      
+      // Se não tem token no localStorage mas tem sessão NextAuth, buscar token
+      if (!token && session?.user?.email) {
+        try {
+          const tokenRes = await fetch('/api/auth/setup-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: session.user.email })
+          });
+          const tokenData = await tokenRes.json();
+          if (tokenData.success && tokenData.token) {
+            const newToken: string = tokenData.token;
+            token = newToken;
+            localStorage.setItem('token', newToken);
+            localStorage.setItem('user', JSON.stringify(tokenData.user));
+          }
+        } catch (e) {
+          console.log('Erro ao gerar token:', e);
+        }
+      }
+      
       const headers: HeadersInit = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
