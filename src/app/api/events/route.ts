@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       })
 
       if (!professionalProfile) {
-        return NextResponse.json({ error: 'Perfil profissional não encontrado', version: API_VERSION }, { status: 404 })
+        return NextResponse.json({ events: [], version: API_VERSION })
       }
 
       const events = await prisma.event.findMany({
