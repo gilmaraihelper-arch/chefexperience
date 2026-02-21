@@ -94,6 +94,16 @@ export default function CadastroProfissionalPage() {
         // Limpar token da URL
         window.history.replaceState({}, '', '/cadastro/profissional');
       }
+      
+      // Check for form data in localStorage (for automation/testing)
+      const storedFormData = localStorage.getItem('cadastro_formData');
+      if (storedFormData) {
+        try {
+          const parsed = JSON.parse(storedFormData);
+          setFormData(prev => ({ ...prev, ...parsed }));
+          localStorage.removeItem('cadastro_formData');
+        } catch (e) {}
+      }
     }
     
     console.log('🔍 Cadastro Profissional - Status da sessão:', status);
