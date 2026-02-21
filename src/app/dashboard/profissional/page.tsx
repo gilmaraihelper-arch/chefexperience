@@ -453,7 +453,7 @@ export default function DashboardProfissionalPage() {
                         <div className="text-right">
                           <p className="text-sm text-gray-500">Orçamento máx.</p>
                           <p className="text-xl font-bold text-amber-600">
-                            R$ {evento.orcamentoMax.toLocaleString('pt-BR')}
+                            R$ {(evento.orcamentoMax || 0).toLocaleString('pt-BR')}
                           </p>
                         </div>
                         <Button 
@@ -508,7 +508,7 @@ export default function DashboardProfissionalPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-gray-900">
-                          R$ {orc.valor.toLocaleString('pt-BR')}
+                          R$ {(orc.valor || 0).toLocaleString('pt-BR')}
                         </p>
                         <Badge className={
                           orc.status === 'aceito' ? 'bg-green-100 text-green-700' :
@@ -551,7 +551,7 @@ export default function DashboardProfissionalPage() {
                     </div>
                     <div className="pt-4 border-t flex items-center justify-between">
                       <span className="text-xl font-bold text-amber-600">
-                        R$ {evento.valor.toLocaleString('pt-BR')}
+                        R$ {(evento.valor || 0).toLocaleString('pt-BR')}
                       </span>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">
@@ -608,7 +608,7 @@ export default function DashboardProfissionalPage() {
                     <p className="text-sm text-gray-600 mb-3">{pacote.description || pacote.descricao}</p>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl font-bold text-amber-600">
-                        R$ {(pacote.basePrice || pacote.precoBase)?.toLocaleString('pt-BR')}
+                        R$ {((pacote.basePrice || pacote.precoBase) || 0)?.toLocaleString('pt-BR')}
                       </span>
                       <span className="text-sm text-gray-500">/pessoa</span>
                     </div>
@@ -807,7 +807,7 @@ export default function DashboardProfissionalPage() {
                           <p className="text-sm text-gray-500">{pag.data}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-gray-900">R$ {pag.valor.toLocaleString('pt-BR')}</p>
+                          <p className="font-semibold text-gray-900">R$ {(pag.valor || 0).toLocaleString('pt-BR')}</p>
                           <Badge variant="secondary" className="bg-green-100 text-green-700">{pag.status}</Badge>
                         </div>
                       </div>
@@ -831,7 +831,7 @@ export default function DashboardProfissionalPage() {
                           <p className="text-sm text-gray-500">{pag.data}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-gray-900">R$ {pag.valor.toLocaleString('pt-BR')}</p>
+                          <p className="font-semibold text-gray-900">R$ {(pag.valor || 0).toLocaleString('pt-BR')}</p>
                           <Badge variant="secondary" className={
                             pag.status === 'confirmado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                           }>
