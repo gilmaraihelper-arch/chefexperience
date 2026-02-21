@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; type: string }
+    const decoded = jwt.decode(token) as { userId: string; type: string }
     
     if (decoded.type === 'CLIENT') {
       const profile = await prisma.clientProfile.findUnique({

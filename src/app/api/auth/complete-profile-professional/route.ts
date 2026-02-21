@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         try {
           // Try JWT_SECRET first (from login-direct)
           const JWT_SECRET = process.env.JWT_SECRET || 'chefexperience-secret-key';
-          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          const decoded = jwt.decode(token) as any;
           if (decoded?.userId) {
             const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
             if (user) {

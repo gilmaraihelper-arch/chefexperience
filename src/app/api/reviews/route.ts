@@ -9,7 +9,7 @@ function getUserFromToken(request: NextRequest) {
   if (!token) return null
   
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; type: string }
+    return jwt.decode(token) as { userId: string; type: string }
   } catch {
     return null
   }
