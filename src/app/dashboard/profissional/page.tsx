@@ -47,7 +47,9 @@ export default function DashboardProfissionalPage() {
   
   const [eventosAPI, setEventosAPI] = useState<any[]>([]);
   const [pacotesAPI, setPacotesAPI] = useState<any[]>([]);
+  const [orcamentosEnviadosAPI, setOrcamentosEnviadosAPI] = useState<any[]>([]);
   const [loadingEventos, setLoadingEventos] = useState(true);
+  const [loadingOrcamentos, setLoadingOrcamentos] = useState(false);
   
   // Todos os useState juntos, antes dos useEffects
   const [abaAtiva, setAbaAtiva] = useState('disponiveis');
@@ -165,22 +167,51 @@ export default function DashboardProfissionalPage() {
   }, [status]);
 
   useEffect(() => {
-    // Verificar auth via localStorage primeiro (nossa API)
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    // Se tem token no localStorage, não precisa de sessão NextAuth
-    if (token && userStr) {
-      // Usuário logado via nossa API
-      setLoadingEventos(false);
-      return;
+    if (abaAtiva === 'orcamentos') {
+      fetchOrcamentosEnviados();
     }
-    
-    // Caso contrário, verificar sessão NextAuth
-    if (status === 'unauthenticated') {
-      router.push('/login');
+  }, [abaAtiva]);
+
+  const fetchOrcamentosEnviados = async () => {
+    setLoadingOrcamentos(true);
+    try {
+      let token = localStorage.getItem('token');
+      
+      if (!token) {
+        const tokenRes = await fetch('/api/auth/token');
+        const tokenData = await tokenRes.json();
+        if (tokenData.token) {
+          localStorage.setItem('token', tokenData.token);
+          token = tokenData.token;
+        }
+      }
+      
+      if (!token) return;
+      
+      const res = await fetch('/api/proposals', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.proposals) {
+        // Transformar dados da API para o formato do componente
+        const orcamentosFormatados = data.proposals.map((p: any) => ({
+          id: p.id,
+          evento: p.event?.name || 'Evento',
+          cliente: p.event?.client?.user?.name || 'Cliente',
+          dataEvento: p.event?.date,
+          dataEnvio: p.sentAt,
+          valor: p.totalPrice,
+          status: p.status === 'PENDING' ? 'pendente' : p.status === 'ACCEPTED' ? 'aceito' : 'recusado',
+          mensagem: p.message
+        }));
+        setOrcamentosEnviadosAPI(orcamentosFormatados);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar orçamentos:', err);
+    } finally {
+      setLoadingOrcamentos(false);
     }
-  }, [status, router]);
+  };
 
   // Obter dados do usuário - só executar no cliente
   const [userData, setUserData] = useState<any>({});
@@ -205,7 +236,6 @@ export default function DashboardProfissionalPage() {
     'premium': 'Premium',
     'luxo': 'Luxo'
   };
-  const orcamentosEnviados: any[] = [];
   const eventosContratados: any[] = [];
   const eventosCalendario: any[] = [];
 
@@ -581,8 +611,17 @@ export default function DashboardProfissionalPage() {
 
           <TabsContent value="enviados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Meus Orçamentos Enviados</h2>
+            {loadingOrcamentos ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : orcamentosEnviadosAPI.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Você ainda não enviou nenhum orçamento</p>
+              </div>
+            ) : (
             <div className="space-y-4">
-              {orcamentosEnviados.map((orc) => (
+              {orcamentosEnviadosAPI.map((orc) => (
                 <Card key={orc.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
