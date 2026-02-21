@@ -39,8 +39,13 @@ export default function DashboardClientePage() {
   const [propostasRecebidas, setPropostasRecebidas] = useState<any[]>([]);
   const [loadingPropostas, setLoadingPropostas] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const profissionaisFavoritos: any[] = [];
   const meusEventos: any[] = [];
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   useEffect(() => {
     // Carregar dados do usuário do localStorage
@@ -196,6 +201,15 @@ export default function DashboardClientePage() {
   // Permite acesso se tem token no localStorage OU sessão NextAuth
   if (authChecked && !session && !hasToken) {
     return null;
+  }
+
+  // Prevenir hydration mismatch
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
