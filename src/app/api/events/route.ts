@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'chefexperience-secret-key'
-const API_VERSION = '2.0-fixed'
+const API_VERSION = '2.1-match'
 
 function getUserFromToken(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '')
