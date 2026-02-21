@@ -900,11 +900,11 @@ export default function DashboardProfissionalPage() {
           {eventoSelecionado && (
             <div className="space-y-4">
               <div className="bg-amber-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900">{eventoSelecionado.evento}</h4>
-                <p className="text-sm text-gray-600">{eventoSelecionado.cliente}</p>
+                <h4 className="font-semibold text-gray-900">{eventoSelecionado.name || eventoSelecionado.evento}</h4>
+                <p className="text-sm text-gray-600">{eventoSelecionado.client?.user?.name || eventoSelecionado.cliente}</p>
                 <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-500">
-                  <span>📅 {new Date(eventoSelecionado.data).toLocaleDateString('pt-BR')}</span>
-                  <span>👥 {eventoSelecionado.pessoas} pessoas</span>
+                  <span>📅 {(eventoSelecionado.date || eventoSelecionado.data) ? new Date(eventoSelecionado.date || eventoSelecionado.data).toLocaleDateString('pt-BR') : 'Data não informada'}</span>
+                  <span>👥 {eventoSelecionado.guestCount || eventoSelecionado.pessoas || 0} pessoas</span>
                 </div>
               </div>
 
@@ -922,22 +922,33 @@ export default function DashboardProfissionalPage() {
                 <div>
                   <Label>Selecione o pacote</Label>
                   <div className="grid gap-2 mt-2">
-                    {pacotesAPI.filter((p: any) => p.isActive).map((pacote: any) => (
-                      <button
-                        key={pacote.id}
-                        onClick={() => setOrcamentoData({...orcamentoData, pacoteSelecionado: pacote.id.toString()})}
-                        className={`p-3 rounded-lg border-2 text-left transition-all ${
-                          orcamentoData.pacoteSelecionado === pacote.id.toString()
-                            ? 'border-amber-500 bg-amber-50'
-                            : 'border-gray-200 hover:border-amber-300'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{pacote.nome}</span>
-                          <span className="text-amber-600 font-bold">R$ {pacote.precoBase}/pessoa</span>
-                        </div>
-                      </button>
-                    ))}
+                    {pacotesAPI.length === 0 ? (
+                      <p className="text-sm text-gray-500 p-3 bg-gray-50 rounded-lg">
+                        Você ainda não tem pacotes cadastrados. Crie um pacote na aba "Meus Pacotes" primeiro.
+                      </p>
+                    ) : (
+                      pacotesAPI.map((pacote: any) => (
+                        <button
+                          key={pacote.id}
+                          onClick={() => setOrcamentoData({...orcamentoData, pacoteSelecionado: pacote.id.toString()})}
+                          className={`p-3 rounded-lg border-2 text-left transition-all ${
+                            orcamentoData.pacoteSelecionado === pacote.id.toString()
+                              ? 'border-amber-500 bg-amber-50'
+                              : 'border-gray-200 hover:border-amber-300'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{pacote.name || pacote.nome}</span>
+                            <span className="text-amber-600 font-bold">
+                              R$ {(pacote.basePrice || pacote.precoBase || 0).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                          {pacote.description && (
+                            <p className="text-xs text-gray-500 mt-1">{pacote.description}</p>
+                          )}
+                        </button>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -953,9 +964,11 @@ export default function DashboardProfissionalPage() {
                 />
                 {orcamentoData.usarPacote && orcamentoData.pacoteSelecionado && eventoSelecionado && (
                   <p className="text-sm text-gray-500 mt-1">
-                    Sugestão: R$ {(
-                      pacotesAPI.find((p: any) => p.id.toString() === orcamentoData.pacoteSelecionado)?.basePrice || 0
-                    ) * (eventoSelecionado.guestCount || eventoSelecionado.pessoas)}
+                    Valor sugerido: R$ {(
+                      (pacotesAPI.find((p: any) => p.id.toString() === orcamentoData.pacoteSelecionado)?.basePrice || 
+                        pacotesAPI.find((p: any) => p.id.toString() === orcamentoData.pacoteSelecionado)?.precoBase || 0)
+                      * (eventoSelecionado.guestCount || eventoSelecionado.pessoas || 1)
+                    ).toLocaleString('pt-BR')}
                   </p>
                 )}
               </div>
