@@ -1,26 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import jwt from 'jsonwebtoken';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-secret';
 
 // Forçar rota dinâmica (não pré-renderizar)
 export const dynamic = 'force-dynamic';
 
-// Middleware para verificar se é admin
+// Middleware para verificar se é admin (suporta NextAuth e JWT)
 async function isAdmin(req: NextRequest) {
+  // Tentar NextAuth primeiro
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id) {
-    return null;
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { type: true },
+    });
+    return user?.type === 'ADMIN';
   }
 
-  // Verificar se usuário é ADMIN
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { type: true },
-  });
+  // Tentar JWT token do header
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { type: true },
+      });
+      return user?.type === 'ADMIN';
+    } catch {
+      // Token inválido
+    }
+  }
 
-  return user?.type === 'ADMIN';
+  return false;
 }
 
 // GET /api/admin/dashboard - Estatísticas gerais
