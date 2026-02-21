@@ -14,7 +14,9 @@ import {
   Users,
   CheckCircle2,
   MessageSquare,
-  LogOut
+  LogOut,
+  User,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +38,7 @@ export default function DashboardClientePage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [propostasRecebidas, setPropostasRecebidas] = useState<any[]>([]);
   const [loadingPropostas, setLoadingPropostas] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const profissionaisFavoritos: any[] = [];
   const meusEventos: any[] = [];
   
@@ -220,12 +223,54 @@ export default function DashboardClientePage() {
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Evento
               </Button>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
+              
+              {/* User Menu Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
+                  </div>
+                </button>
+                
+                {showUserMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowUserMenu(false)} 
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          router.push('/cadastro/cliente');
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4" />
+                        Editar Perfil
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1" />
+                      
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('token');
+                          localStorage.removeItem('user');
+                          router.push('/logout');
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button variant="ghost" size="sm" onClick={() => router.push('/logout')}>
-                <LogOut className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         </div>

@@ -26,7 +26,10 @@ import {
   Send,
   Settings,
   Eye,
-  LogOut
+  LogOut,
+  User,
+  Menu,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +70,7 @@ export default function DashboardProfissionalPage() {
     includes: [] as string[],
   });
   const [creatingPackage, setCreatingPackage] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // useEffects vêm depois de todos os useState
   useEffect(() => {
@@ -341,6 +345,16 @@ export default function DashboardProfissionalPage() {
     router.push('/');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/logout');
+  };
+
+  const handleEditProfile = () => {
+    router.push('/cadastro/profissional');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30">
       {/* Header */}
@@ -362,8 +376,51 @@ export default function DashboardProfissionalPage() {
                 <Briefcase className="w-4 h-4" />
                 <span>Plano Profissional</span>
               </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                {userInitials}
+              
+              {/* User Menu Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {userInitials}
+                  </div>
+                </button>
+                
+                {showUserMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowUserMenu(false)} 
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          handleEditProfile();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4" />
+                        Editar Perfil
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1" />
+                      
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
