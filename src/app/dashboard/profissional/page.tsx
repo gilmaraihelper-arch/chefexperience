@@ -71,6 +71,11 @@ export default function DashboardProfissionalPage() {
   });
   const [creatingPackage, setCreatingPackage] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // useEffects vêm depois de todos os useState
   useEffect(() => {
@@ -215,7 +220,7 @@ export default function DashboardProfissionalPage() {
   const isAuthenticated = status === 'authenticated' || hasToken;
   const hasAuth = status === 'authenticated' || hasToken;
 
-  if (status === 'loading' && !hasToken) {
+  if (!isClient || (status === 'loading' && !hasToken)) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
