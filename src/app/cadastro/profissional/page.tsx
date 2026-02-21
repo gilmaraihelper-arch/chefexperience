@@ -85,6 +85,17 @@ export default function CadastroProfissionalPage() {
   
   // Log quando a página carrega
   useEffect(() => {
+    // Salvar token da URL se existir
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      if (tokenFromUrl && !localStorage.getItem('token')) {
+        localStorage.setItem('token', tokenFromUrl);
+        // Limpar token da URL
+        window.history.replaceState({}, '', '/cadastro/profissional');
+      }
+    }
+    
     console.log('🔍 Cadastro Profissional - Status da sessão:', status);
     console.log('🔍 Cadastro Profissional - Session:', session);
     console.log('🔍 Cadastro Profissional - isOAuth:', isOAuth);
