@@ -132,18 +132,22 @@ export async function GET(request: NextRequest) {
         profCapacity = parseInt(professionalProfile.capacity || '0')
       } catch (e) { profCapacity = 0 }
 
+      console.log('Calculating match for', events.length, 'events')
+
       const eventsWithMatch = events.map(event => {
         let score = 0
         let total = 0
 
         // Match de estilo culinário (30%)
         if (event.cuisineStyles) {
-          const eventCuisines = JSON.parse(event.cuisineStyles || '[]')
-          const cuisineMatch = eventCuisines.filter((c: string) => profCuisines.includes(c)).length
-          if (eventCuisines.length > 0) {
-            score += (cuisineMatch / eventCuisines.length) * 30
-          }
-          total += 30
+          try {
+            const eventCuisines = JSON.parse(event.cuisineStyles || '[]')
+            const cuisineMatch = eventCuisines.filter((c: string) => profCuisines.includes(c)).length
+            if (eventCuisines.length > 0) {
+              score += (cuisineMatch / eventCuisines.length) * 30
+            }
+            total += 30
+          } catch (e) {}
         }
 
         // Match de tipo de serviço (25%)
