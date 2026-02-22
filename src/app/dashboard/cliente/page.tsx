@@ -343,7 +343,9 @@ export default function DashboardClientePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-500 text-sm">Contratados</p>
-                  <p className="text-2xl font-bold text-gray-900">3</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {eventos.filter((e: any) => e.hiredProposalId || e.hiredProposal).length}
+                  </p>
                 </div>
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
@@ -535,7 +537,7 @@ export default function DashboardClientePage() {
 
           <TabsContent value="contratados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Profissionais Contratados</h2>
-            {meusEventos.filter(e => e.status === 'contratado' || e.status === 'concluido').map((evento) => (
+            {meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').map((evento) => (
               <Card key={evento.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -548,8 +550,8 @@ export default function DashboardClientePage() {
                       <p className="text-xl font-bold text-amber-600">
                         R$ {evento.valor?.toLocaleString('pt-BR')}
                       </p>
-                      <Badge className={evento.status === 'concluido' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
-                        {evento.status === 'concluido' ? 'Concluído' : 'Em andamento'}
+                      <Badge className={evento.status === 'COMPLETED' || new Date(evento.date) < new Date() ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
+                        {evento.status === 'COMPLETED' || new Date(evento.date) < new Date() ? 'Concluído' : 'Em andamento'}
                       </Badge>
                     </div>
                   </div>
