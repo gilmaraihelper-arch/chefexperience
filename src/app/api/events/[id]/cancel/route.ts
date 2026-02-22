@@ -8,7 +8,11 @@ function getUserFromToken(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
   if (!token) return null;
   try {
-    return jwt.decode(token) as { userId: string; type: string };
+    const decoded = jwt.decode(token) as { userId?: string; id?: string; type: string };
+    return {
+      userId: decoded.userId || decoded.id,
+      type: decoded.type
+    };
   } catch {
     return null;
   }
