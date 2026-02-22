@@ -41,6 +41,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ReviewList } from '@/components/review-list';
+import { PortfolioGallery } from '@/components/portfolio-gallery';
 
 export default function DashboardProfissionalPage() {
   const router = useRouter();
@@ -533,6 +534,7 @@ export default function DashboardProfissionalPage() {
             <TabsTrigger value="calendario">Calendário</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
+            <TabsTrigger value="portfolio">Portfólio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="disponiveis" className="space-y-4">
@@ -1009,6 +1011,28 @@ export default function DashboardProfissionalPage() {
             </div>
 
             <ReviewList professionalId={userData?.id} />
+          </TabsContent>
+
+          <TabsContent value="portfolio" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Meu Portfólio</h2>
+                <p className="text-sm text-gray-500">Mostre seus melhores trabalhos</p>
+              </div>
+              <div className="text-sm text-gray-500">
+                {userData?.subscriptionPlan === 'PREMIUM' ? (
+                  <span className="text-amber-600 font-medium">⭐ Premium - Fotos ilimitadas</span>
+                ) : (
+                  <span>Free - Até 5 fotos</span>
+                )}
+              </div>
+            </div>
+
+            <PortfolioGallery 
+              professionalId={userData?.id} 
+              isOwner={true}
+              maxImages={userData?.subscriptionPlan === 'PREMIUM' ? 100 : 5}
+            />
           </TabsContent>
         </Tabs>
       </main>
