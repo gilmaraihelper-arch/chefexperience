@@ -10,7 +10,11 @@ function getUserFromToken(request: NextRequest) {
   
   try {
     // Usar decode para aceitar tokens de diferentes secrets (NextAuth/local)
-    return jwt.decode(token) as { userId: string; type: string }
+    const decoded = jwt.decode(token) as { userId?: string; id?: string; type: string }
+    return {
+      userId: decoded.userId || decoded.id,
+      type: decoded.type
+    }
   } catch {
     return null
   }

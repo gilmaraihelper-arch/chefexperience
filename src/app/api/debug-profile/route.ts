@@ -11,18 +11,19 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const decoded = jwt.decode(token) as { userId: string; type: string }
+    const decoded = jwt.decode(token) as { userId?: string; id?: string; type: string }
+    const userId = decoded.userId || decoded.id
     
     if (decoded.type === 'CLIENT') {
       const profile = await prisma.clientProfile.findUnique({
-        where: { userId: decoded.userId }
+        where: { userId: userId }
       })
-      return NextResponse.json({ profile, userId: decoded.userId, type: decoded.type })
+      return NextResponse.json({ profile, userId: userId, type: decoded.type })
     } else {
       const profile = await prisma.professionalProfile.findUnique({
-        where: { userId: decoded.userId }
+        where: { userId: userId }
       })
-      return NextResponse.json({ profile, userId: decoded.userId, type: decoded.type })
+      return NextResponse.json({ profile, userId: userId, type: decoded.type })
     }
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
