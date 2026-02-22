@@ -25,6 +25,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
+    if (!user.userId) {
+      return NextResponse.json({ error: 'userId não encontrado no token' }, { status: 400 });
+    }
+
     // Atualizar tipo do usuário para CLIENT
     await prisma.user.update({
       where: { id: user.userId },
