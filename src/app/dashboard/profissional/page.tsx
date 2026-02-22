@@ -40,6 +40,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ReviewList } from '@/components/review-list';
 
 export default function DashboardProfissionalPage() {
   const router = useRouter();
@@ -531,6 +532,7 @@ export default function DashboardProfissionalPage() {
             <TabsTrigger value="pacotes">Meus Pacotes</TabsTrigger>
             <TabsTrigger value="calendario">Calendário</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+            <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="disponiveis" className="space-y-4">
@@ -991,6 +993,22 @@ export default function DashboardProfissionalPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="avaliacoes" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Minhas Avaliações</h2>
+                <p className="text-sm text-gray-500">Veja o que seus clientes estão dizendo</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                <span className="text-lg font-semibold">{userData?.rating?.toFixed(1) || '0.0'}</span>
+                <span className="text-sm text-gray-500">({userData?.reviewCount || 0} avaliações)</span>
+              </div>
+            </div>
+
+            <ReviewList professionalId={userData?.id} />
           </TabsContent>
         </Tabs>
       </main>

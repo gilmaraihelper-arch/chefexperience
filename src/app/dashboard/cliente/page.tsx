@@ -24,6 +24,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { NotificationBell } from '@/components/notifications';
+import { StarRating } from '@/components/star-rating';
 
 export default function DashboardClientePage() {
   const router = useRouter();
@@ -518,10 +519,8 @@ export default function DashboardClientePage() {
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">{prof.nome}</h3>
                         <p className="text-sm text-gray-500">{prof.especialidade}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                          <span className="text-sm font-medium">{prof.rating}</span>
-                          <span className="text-sm text-gray-400">({prof.avaliacoes} avaliações)</span>
+                        <div className="mt-1">
+                          <StarRating rating={prof.rating} size="sm" reviewCount={prof.avaliacoes} />
                         </div>
                       </div>
                       <Button size="sm" variant="outline">
