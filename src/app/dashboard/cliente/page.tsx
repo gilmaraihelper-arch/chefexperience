@@ -22,6 +22,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { AlertTriangle } from 'lucide-react';
 
 import { NotificationBell } from '@/components/notifications';
 import { StarRating } from '@/components/star-rating';
@@ -41,6 +50,12 @@ export default function DashboardClientePage() {
   const [loadingPropostas, setLoadingPropostas] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
+  // Modal de cancelamento
+  const [eventoParaCancelar, setEventoParaCancelar] = useState<any>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  
   const profissionaisFavoritos: any[] = [];
   const meusEventos: any[] = [];
   
@@ -190,6 +205,37 @@ export default function DashboardClientePage() {
     }
     fetchPropostas();
   }, [status, hasToken]);
+
+  // Função para cancelar evento
+  const handleCancelarEvento = async () => {
+    if (!eventoParaCancelar) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      setCancelando(true);
+      const res = await fetch(`/api/events/${eventoParaCancelar.id}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        // Atualizar lista de eventos
+        setEventos(prev => prev.map(e => 
+          e.id === eventoParaCancelar.id ? { ...e, status: 'CANCELLED' } : e
+        ));
+        setShowCancelModal(false);
+        setEventoParaCancelar(null);
+      } else {
+        console.error('Erro ao cancelar evento:', res.status);
+      }
+    } catch (err) {
+      console.error('Erro ao cancelar evento:', err);
+    } finally {
+      setCancelando(false);
+    }
+  };
 
   if (status === 'loading') {
     return (
@@ -429,19 +475,43 @@ export default function DashboardClientePage() {
                         <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                           {evento.proposals.length} propostas recebidas
                         </Badge>
-                        <Button 
-                          size="sm" 
-                          className="bg-gradient-to-r from-amber-500 to-orange-600"
-                          onClick={() => router.push(`/evento/${evento.id}/propostas`)}
-                        >
-                          Ver Propostas
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => {
+                              setEventoParaCancelar(evento);
+                              setShowCancelModal(true);
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-gradient-to-r from-amber-500 to-orange-600"
+                            onClick={() => router.push(`/evento/${evento.id}/propostas`)}
+                          >
+                            Ver Propostas
+                          </Button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="mt-4">
+                      <div className="mt-4 flex items-center justify-between">
                         <Badge variant="secondary" className="bg-gray-100 text-gray-600">
                           Nenhuma proposta ainda
                         </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => {
+                            setEventoParaCancelar(evento);
+                            setShowCancelModal(true);
+                          }}
+                        >
+                          Cancelar
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -560,6 +630,42 @@ export default function DashboardClientePage() {
             ))}
           </TabsContent>
         </Tabs>
+        
+        {/* Modal de Confirmação de Cancelamento */}
+        <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                Cancelar Evento
+              </DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja cancelar o evento <strong>{eventoParaCancelar?.name}</strong>?
+                <br /><br />
+                Esta ação não pode ser desfeita. Todas as propostas serão canceladas automaticamente.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setEventoParaCancelar(null);
+                }}
+                disabled={cancelando}
+              >
+                Não, manter evento
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelarEvento}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando...' : 'Sim, cancelar evento'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
