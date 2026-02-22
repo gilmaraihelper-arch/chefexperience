@@ -36,10 +36,7 @@ export async function POST(request: NextRequest) {
       where: { userId: user.userId },
       update: {},
       create: {
-        userId: user.userId,
-        totalEvents: 0,
-        totalSpent: 0,
-        rating: 0
+        userId: user.userId
       }
     });
 
