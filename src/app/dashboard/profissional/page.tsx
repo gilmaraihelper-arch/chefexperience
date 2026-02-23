@@ -661,7 +661,7 @@ export default function DashboardProfissionalPage() {
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-gray-700">Inclui:</p>
                       <div className="flex flex-wrap gap-1">
-                        {(pacote.includes || pacote.inclui || []).map((item: any) => (
+                        {(typeof pacote.includes === 'string' ? JSON.parse(pacote.includes) : pacote.includes || []).map((item: any) => (
                           <span key={item} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
                             {item}
                           </span>
