@@ -431,8 +431,61 @@ export default function CadastroProfissionalPage() {
   };
 
   const isStepValid = () => {
-    // Always return true for testing - bypass all validation
-    return true;
+    switch (step) {
+      case 1:
+        // Tipo de pessoa obrigatório
+        return tipoPessoa !== null;
+      
+      case 2:
+        // Dados pessoais/empresariais obrigatórios
+        if (tipoPessoa === 'pf') {
+          // Pessoa Física: nome, CPF, email, telefone
+          if (!formData.nome?.trim()) return false;
+          if (!formData.cpf?.trim()) return false;
+        } else if (tipoPessoa === 'pj') {
+          // Pessoa Jurídica: razão social, CNPJ, email, telefone
+          if (!formData.razaoSocial?.trim()) return false;
+          if (!formData.cnpj?.trim()) return false;
+        }
+        // Campos comuns obrigatórios
+        if (!formData.email?.trim()) return false;
+        if (!formData.telefone?.trim()) return false;
+        // Senha obrigatória apenas para cadastro sem OAuth
+        if (!isOAuth && !formData.senha?.trim()) return false;
+        if (!isOAuth && formData.senha?.length < 6) return false;
+        if (!isOAuth && formData.senha !== formData.confirmarSenha) return false;
+        return true;
+      
+      case 3:
+        // Endereço obrigatório
+        if (!formData.cep?.trim()) return false;
+        if (!formData.endereco?.trim()) return false;
+        if (!formData.numero?.trim()) return false;
+        if (!formData.bairro?.trim()) return false;
+        if (!formData.cidade?.trim()) return false;
+        if (!formData.estado?.trim()) return false;
+        return true;
+      
+      case 4:
+        // Serviços - pelo menos um tipo de evento e uma especialidade
+        if (formData.tiposEvento.length === 0) return false;
+        if (formData.especialidades.length === 0) return false;
+        if (formData.faixaPreco.length === 0) return false;
+        return true;
+      
+      case 5:
+        // Perfil - descrição obrigatória
+        if (!formData.descricao?.trim()) return false;
+        if (formData.descricao.length < 50) return false;
+        return true;
+      
+      case 6:
+        // Fotos - pelo menos uma foto é recomendada mas não obrigatória
+        return true;
+      
+      default:
+        return false;
+    }
   };
 
   const renderStep = () => {

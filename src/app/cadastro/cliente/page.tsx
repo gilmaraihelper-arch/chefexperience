@@ -84,15 +84,32 @@ export default function CadastroClientePage() {
   const isStepValid = () => {
     switch (step) {
       case 1:
-        return formData.nome && formData.email && formData.telefone && formData.cpf;
-      case 2:
-        return formData.cep && formData.endereco && formData.cidade && formData.estado;
-      case 3:
-        // Se for OAuth, não precisa validar senha
-        if (isOAuth) return formData.aceitaTermos;
-        return formData.senha.length >= 8 && formData.senha === formData.confirmarSenha && formData.aceitaTermos;
-      default:
+        // Dados pessoais obrigatórios
+        if (!formData.nome?.trim()) return false;
+        if (!formData.email?.trim()) return false;
+        if (!formData.telefone?.trim()) return false;
+        if (!formData.cpf?.trim()) return false;
         return true;
+      case 2:
+        // Endereço obrigatório
+        if (!formData.cep?.trim()) return false;
+        if (!formData.endereco?.trim()) return false;
+        if (!formData.numero?.trim()) return false;
+        if (!formData.bairro?.trim()) return false;
+        if (!formData.cidade?.trim()) return false;
+        if (!formData.estado?.trim()) return false;
+        return true;
+      case 3:
+        // Senha e termos
+        if (!isOAuth) {
+          if (!formData.senha?.trim()) return false;
+          if (formData.senha.length < 6) return false;
+          if (formData.senha !== formData.confirmarSenha) return false;
+        }
+        if (!formData.aceitaTermos) return false;
+        return true;
+      default:
+        return false;
     }
   };
 
