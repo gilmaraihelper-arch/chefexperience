@@ -2,21 +2,56 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
 
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'chefexperience-secret-key';
+
 export async function POST(request: NextRequest) {
   try {
+    let userId: string | null = null;
+    
+    // Tentativa 1: Verificar sessão do NextAuth
     const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      console.log("📝 Complete profile - autenticado via sessão NextAuth:", session.user.id);
+      userId = session.user.id;
+    }
     
-    console.log("📝 Complete profile - session:", { 
-      hasSession: !!session, 
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email 
-    });
+    // Tentativa 2: Verificar Bearer token no header
+    if (!userId) {
+      const authHeader = request.headers.get('authorization');
+      console.log("🔍 Verificando Authorization header:", authHeader ? "presente" : "ausente");
+      
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          // Verificar token JWT (não apenas decodificar)
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          console.log("✅ Token JWT verificado, userId:", decoded?.userId);
+          
+          if (decoded?.userId) {
+            // Verificar se usuário existe
+            const user = await prisma.user.findUnique({ 
+              where: { id: decoded.userId },
+              select: { id: true }
+            });
+            
+            if (user) {
+              userId = user.id;
+            } else {
+              console.log("❌ Usuário não encontrado para userId:", decoded.userId);
+            }
+          }
+        } catch (jwtError: any) {
+          console.log('❌ Token JWT inválido ou expirado:', jwtError.message);
+        }
+      }
+    }
     
-    if (!session?.user?.id) {
+    if (!userId) {
+      console.log("❌ Complete profile - nenhuma forma de autenticação válida");
       return NextResponse.json(
         { error: 'Não autorizado - sessão inválida' },
         { status: 401 }
@@ -34,9 +69,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = session.user.id;
-    const userEmail = session.user.email;
-    
     // Atualizar usuário usando Prisma
     const updatedUser = await prisma.user.update({
       where: { id: userId },

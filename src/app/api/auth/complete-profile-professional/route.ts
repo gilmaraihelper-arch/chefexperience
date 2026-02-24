@@ -6,36 +6,72 @@ import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
 
+const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'chefexperience-secret-key';
+
 export async function POST(request: NextRequest) {
   console.log("📝 API complete-profile-professional INICIADA");
   
   try {
-    let session = await getServerSession(authOptions);
+    let userEmail: string | null = null;
+    let userId: string | null = null;
     
-    // Fallback: Check for Bearer token if no session
-    if (!session?.user?.email) {
+    // Tentativa 1: Verificar sessão do NextAuth
+    const session = await getServerSession(authOptions);
+    if (session?.user?.email) {
+      console.log("✅ Autenticado via sessão NextAuth:", session.user.email);
+      userEmail = session.user.email;
+      userId = (session.user as any)?.id || null;
+    }
+    
+    // Tentativa 2: Verificar Bearer token no header
+    if (!userEmail) {
       const authHeader = request.headers.get('authorization');
+      console.log("🔍 Verificando Authorization header:", authHeader ? "presente" : "ausente");
+      
       if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
-          // Try JWT_SECRET first (from login-direct)
-          const JWT_SECRET = process.env.JWT_SECRET || 'chefexperience-secret-key';
-          const decoded = jwt.decode(token) as any;
+          // Verificar token JWT (não apenas decodificar)
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          console.log("✅ Token JWT verificado, userId:", decoded?.userId);
+          
           if (decoded?.userId) {
-            const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+            const user = await prisma.user.findUnique({ 
+              where: { id: decoded.userId },
+              select: { id: true, email: true, name: true }
+            });
+            
             if (user) {
-              session = { user: { email: user.email, name: user.name } } as any;
+              console.log("✅ Usuário encontrado via token JWT:", user.email);
+              userEmail = user.email;
+              userId = user.id;
+            } else {
+              console.log("❌ Usuário não encontrado para userId:", decoded.userId);
             }
           }
-        } catch (e) {
-          console.log('Token inválido:', e);
+        } catch (jwtError: any) {
+          console.log('❌ Token JWT inválido ou expirado:', jwtError.message);
+          
+          // Fallback: tentar decodificar sem verificar (para debug)
+          try {
+            const decoded = jwt.decode(token) as any;
+            console.log("🔍 Token decodificado (sem verificação):", { 
+              userId: decoded?.userId, 
+              email: decoded?.email,
+              exp: decoded?.exp,
+              iat: decoded?.iat 
+            });
+          } catch (e) {
+            console.log("❌ Erro ao decodificar token:", e);
+          }
         }
       }
     }
     
-    if (!session?.user?.email) {
+    if (!userEmail) {
+      console.log("❌ Nenhuma forma de autenticação válida encontrada");
       return NextResponse.json(
-        { error: 'Não autorizado - sessão inválida' },
+        { error: 'Não autorizado - sessão inválida. Por favor, faça login novamente.' },
         { status: 401 }
       );
     }
@@ -87,20 +123,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuário pelo email usando Prisma
-    let user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
+    let user = userId 
+      ? await prisma.user.findUnique({ where: { id: userId } })
+      : await prisma.user.findUnique({ where: { email: userEmail! } });
     
-    let userId: string;
+    let finalUserId: string;
     let userName: string;
     
     if (!user) {
       // Criar usuário se não existir
-      const name = razaoSocial || nomeFantasia || session.user.name || session.user.email.split('@')[0];
+      const name = razaoSocial || nomeFantasia || session?.user?.name || userEmail!.split('@')[0];
       
       user = await prisma.user.create({
         data: {
-          email: session.user.email,
+          email: userEmail!,
           name: name,
           password: '', // OAuth users don't need password
         }
@@ -108,12 +144,12 @@ export async function POST(request: NextRequest) {
       console.log("✅ Usuário criado:", user.id);
     }
     
-    userId = user.id;
+    finalUserId = user.id;
     userName = user.name;
 
     // Atualizar usuário usando Prisma
     user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: finalUserId },
       data: {
         type: 'PROFESSIONAL',
         personType: personType,
@@ -144,7 +180,7 @@ export async function POST(request: NextRequest) {
     const capacityJson = JSON.stringify(capacidade || []);
     
     const profileData = {
-      userId: userId,
+      userId: finalUserId,
       description: description || '',
       experience: experience || '',
       differentials: differentials || '',
@@ -169,7 +205,7 @@ export async function POST(request: NextRequest) {
 
     // Usar upsert para criar ou atualizar
     const profile = await prisma.professionalProfile.upsert({
-      where: { userId: userId },
+      where: { userId: finalUserId },
       update: profileData,
       create: profileData
     });

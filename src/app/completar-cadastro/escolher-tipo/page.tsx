@@ -56,7 +56,10 @@ export default function EscolherTipoPage() {
 
   const handleSelect = (tipo: 'cliente' | 'profissional') => {
     setLoading(tipo);
-    router.push(`/cadastro/${tipo}`);
+    // Passar token na URL para o cadastro
+    const token = localStorage.getItem('token');
+    const url = token ? `/cadastro/${tipo}?token=${token}` : `/cadastro/${tipo}`;
+    router.push(url);
   };
 
   return (

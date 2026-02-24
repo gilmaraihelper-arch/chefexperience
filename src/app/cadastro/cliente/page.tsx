@@ -63,6 +63,19 @@ export default function CadastroClientePage() {
     }
   }, [session]);
 
+  // Pegar token da URL (quando vem do OAuth) e salvar no localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      if (tokenFromUrl && !localStorage.getItem('token')) {
+        localStorage.setItem('token', tokenFromUrl);
+        // Limpar token da URL
+        window.history.replaceState({}, '', '/cadastro/cliente');
+      }
+    }
+  }, []);
+
   const updateForm = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
@@ -90,11 +103,17 @@ export default function CadastroClientePage() {
     try {
       let response;
       
+      // Pegar token do localStorage se existir
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
       if (isOAuth) {
         // Se veio do OAuth, usar complete-profile
         response = await fetch('/api/auth/complete-profile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
           body: JSON.stringify({
             type: 'CLIENT',
             phone: formData.telefone,

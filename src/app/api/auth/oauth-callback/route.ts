@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Se não tem tipo, ir para completar cadastro
-    return NextResponse.redirect(new URL(`/completar-cadastro?token=${token}`, request.url));
+    return NextResponse.redirect(new URL(`/completar-cadastro/escolher-tipo?token=${token}`, request.url));
 
   } catch (error) {
     console.error('OAuth callback error:', error);
