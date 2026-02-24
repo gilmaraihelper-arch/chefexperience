@@ -56,16 +56,19 @@ Senha: chef123
 
 ## ⚠️ Status
 
-- **Status:** Produção (versão antiga due to Vercel deploy limit)
-- **Problema:** Limite de 100 deploys/dia no Vercel atingido
+- **Status:** ✅ 100% Concluído (2026-02-22)
+- **Produção:** https://chefexperience.vercel.app
+- **Últimos fixes (22/02):** Admin panel - promoção user para ADMIN via API; Evento status - filtro corrigido para usar hiredProposalId após contratação
 
-## 📋 QA Report (2026-02-19)
+## 📋 QA Report (2026-02-22)
 
-### Bugs Corrigidos
-- ✅ Credenciais de teste
-- ✅ Páginas FAQ e Contato (404 → criadas)
-- ✅ Dashboard Cliente - nome hardcoded (mostra nome do usuário)
-- ✅ OAuth callback - redirecionamento correto
+### Bugs Corrigidos (22/02)
+- ✅ Admin panel - promoção user para ADMIN via API
+- ✅ Evento status - filtro corrigido para usar hiredProposalId após contratação
+- ✅ Dashboard Profissional - corrigido erro .map() no campo includes
+- ✅ Modal orçamento - corrigido campos de data, pessoas e pacotes
+- ✅ API events - adicionado maxBudget
+- ✅ Match calculation - lógica simplificada e corrigida
 
 ### Funcionalidades
 - ✅ Sistema de autenticação (NextAuth + Google OAuth)
@@ -117,5 +120,5 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-02-20*
+*Última atualização: 2026-02-24*
 *QA Engineer: Carol*
