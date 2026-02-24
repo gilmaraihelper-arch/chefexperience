@@ -36,6 +36,19 @@ export default function DashboardClientePage() {
   const [loadingPropostas, setLoadingPropostas] = useState(false);
   const profissionaisFavoritos: any[] = [];
   const meusEventos: any[] = [];
+
+  // Obter dados do usuário - só executar no cliente
+  useEffect(() => {
+    // Carregar dados do usuário do localStorage
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        setUserData(JSON.parse(stored));
+      } catch (e) {}
+    }
+    setHasToken(!!localStorage.getItem('token'));
+    setAuthChecked(true);
+  }, []);
   
   useEffect(() => {
     // Carregar dados do usuário do localStorage
@@ -56,7 +69,7 @@ export default function DashboardClientePage() {
       const tokenFromUrl = urlParams.get('token');
       if (tokenFromUrl) {
         localStorage.setItem('token', tokenFromUrl);
-        // Buscar dados do usuário usando o token
+        // Buscar dados do usuário usando o token ANTES de redirecionar
         fetch('/api/auth/token', {
           headers: { Authorization: `Bearer ${tokenFromUrl}` }
         })
@@ -64,10 +77,15 @@ export default function DashboardClientePage() {
           .then(data => {
             if (data.user) {
               localStorage.setItem('user', JSON.stringify(data.user));
+              setUserData(data.user);
             }
+            // Só redireciona depois de salvar os dados
+            router.replace('/dashboard/cliente');
           })
-          .catch(console.error);
-        router.replace('/dashboard/cliente');
+          .catch(err => {
+            console.error('Erro ao buscar dados do usuário:', err);
+            router.replace('/dashboard/cliente');
+          });
       }
     }
   }, [router]);

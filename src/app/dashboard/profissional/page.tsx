@@ -73,7 +73,7 @@ export default function DashboardProfissionalPage() {
       const tokenFromUrl = urlParams.get('token');
       if (tokenFromUrl) {
         localStorage.setItem('token', tokenFromUrl);
-        // Buscar dados do usuário usando o token
+        // Buscar dados do usuário usando o token ANTES de redirecionar
         fetch('/api/auth/token', {
           headers: { Authorization: `Bearer ${tokenFromUrl}` }
         })
@@ -81,10 +81,16 @@ export default function DashboardProfissionalPage() {
           .then(data => {
             if (data.user) {
               localStorage.setItem('user', JSON.stringify(data.user));
+              setUserData(data.user);
             }
+            // Só redireciona depois de salvar os dados
+            router.replace('/dashboard/profissional');
           })
-          .catch(console.error);
-        router.replace('/dashboard/profissional');
+          .catch(err => {
+            console.error('Erro ao buscar dados do usuário:', err);
+            // Mesmo com erro, redireciona para não ficar travado
+            router.replace('/dashboard/profissional');
+          });
       }
     }
   }, [router]);
@@ -184,8 +190,8 @@ export default function DashboardProfissionalPage() {
     }
   }, []);
   
-  const userName = (session?.user?.name || userData.name || 'Chef');
-  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+  const userName = (session?.user?.name || userData?.name || 'Chef');
+  const userInitials = userName?.split(' ')?.map((n: string) => n[0])?.join('')?.substring(0, 2)?.toUpperCase() || 'CH';
 
   // Define missing variables that were in hardcoded data
   const faixaPrecoLabels: Record<string, string> = {
@@ -484,7 +490,7 @@ export default function DashboardProfissionalPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {(evento.cuisineStyles ? JSON.parse(evento.cuisineStyles || '[]') : evento.estilosCulinaria || []).map((estilo: string) => (
+                          {(evento?.cuisineStyles ? JSON.parse(evento.cuisineStyles || '[]') : evento?.estilosCulinaria || []).map((estilo: string) => (
                             <span key={estilo} className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                               {estilo}
                             </span>
