@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { NotificationBell } from '@/components/notifications';
 import { useSession } from 'next-auth/react';
 import { 
   ChefHat, 
@@ -24,7 +25,11 @@ import {
   CheckCircle2,
   Send,
   Settings,
-  Eye
+  Eye,
+  LogOut,
+  User,
+  Menu,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +40,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ReviewList } from '@/components/review-list';
+import { PortfolioGallery } from '@/components/portfolio-gallery';
 
 export default function DashboardProfissionalPage() {
   const router = useRouter();
@@ -42,7 +49,9 @@ export default function DashboardProfissionalPage() {
   
   const [eventosAPI, setEventosAPI] = useState<any[]>([]);
   const [pacotesAPI, setPacotesAPI] = useState<any[]>([]);
+  const [orcamentosEnviadosAPI, setOrcamentosEnviadosAPI] = useState<any[]>([]);
   const [loadingEventos, setLoadingEventos] = useState(true);
+  const [loadingOrcamentos, setLoadingOrcamentos] = useState(false);
   
   // Todos os useState juntos, antes dos useEffects
   const [abaAtiva, setAbaAtiva] = useState('disponiveis');
@@ -65,6 +74,12 @@ export default function DashboardProfissionalPage() {
     includes: [] as string[],
   });
   const [creatingPackage, setCreatingPackage] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // useEffects vêm depois de todos os useState
   useEffect(() => {
@@ -160,22 +175,51 @@ export default function DashboardProfissionalPage() {
   }, [status]);
 
   useEffect(() => {
-    // Verificar auth via localStorage primeiro (nossa API)
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    // Se tem token no localStorage, não precisa de sessão NextAuth
-    if (token && userStr) {
-      // Usuário logado via nossa API
-      setLoadingEventos(false);
-      return;
+    if (abaAtiva === 'orcamentos') {
+      fetchOrcamentosEnviados();
     }
-    
-    // Caso contrário, verificar sessão NextAuth
-    if (status === 'unauthenticated') {
-      router.push('/login');
+  }, [abaAtiva]);
+
+  const fetchOrcamentosEnviados = async () => {
+    setLoadingOrcamentos(true);
+    try {
+      let token = localStorage.getItem('token');
+      
+      if (!token) {
+        const tokenRes = await fetch('/api/auth/token');
+        const tokenData = await tokenRes.json();
+        if (tokenData.token) {
+          localStorage.setItem('token', tokenData.token);
+          token = tokenData.token;
+        }
+      }
+      
+      if (!token) return;
+      
+      const res = await fetch('/api/proposals', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.proposals) {
+        // Transformar dados da API para o formato do componente
+        const orcamentosFormatados = data.proposals.map((p: any) => ({
+          id: p.id,
+          evento: p.event?.name || 'Evento',
+          cliente: p.event?.client?.user?.name || 'Cliente',
+          dataEvento: p.event?.date,
+          dataEnvio: p.sentAt,
+          valor: p.totalPrice,
+          status: p.status === 'PENDING' ? 'pendente' : p.status === 'ACCEPTED' ? 'aceito' : 'recusado',
+          mensagem: p.message
+        }));
+        setOrcamentosEnviadosAPI(orcamentosFormatados);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar orçamentos:', err);
+    } finally {
+      setLoadingOrcamentos(false);
     }
-  }, [status, router]);
+  };
 
   // Obter dados do usuário - só executar no cliente
   const [userData, setUserData] = useState<any>({});
@@ -200,7 +244,6 @@ export default function DashboardProfissionalPage() {
     'premium': 'Premium',
     'luxo': 'Luxo'
   };
-  const orcamentosEnviados: any[] = [];
   const eventosContratados: any[] = [];
   const eventosCalendario: any[] = [];
 
@@ -215,7 +258,7 @@ export default function DashboardProfissionalPage() {
   const isAuthenticated = status === 'authenticated' || hasToken;
   const hasAuth = status === 'authenticated' || hasToken;
 
-  if (status === 'loading' && !hasToken) {
+  if (!isClient || (status === 'loading' && !hasToken)) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -345,6 +388,16 @@ export default function DashboardProfissionalPage() {
     router.push('/');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/logout');
+  };
+
+  const handleEditProfile = () => {
+    router.push('/cadastro/profissional');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30">
       {/* Header */}
@@ -361,12 +414,56 @@ export default function DashboardProfissionalPage() {
             </button>
             
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
                 <Briefcase className="w-4 h-4" />
                 <span>Plano Profissional</span>
               </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                {userInitials}
+              
+              {/* User Menu Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {userInitials}
+                  </div>
+                </button>
+                
+                {showUserMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowUserMenu(false)} 
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          handleEditProfile();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4" />
+                        Editar Perfil
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1" />
+                      
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -442,6 +539,8 @@ export default function DashboardProfissionalPage() {
             <TabsTrigger value="pacotes">Meus Pacotes</TabsTrigger>
             <TabsTrigger value="calendario">Calendário</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+            <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
+            <TabsTrigger value="portfolio">Portfólio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="disponiveis" className="space-y-4">
@@ -522,8 +621,17 @@ export default function DashboardProfissionalPage() {
 
           <TabsContent value="enviados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Meus Orçamentos Enviados</h2>
+            {loadingOrcamentos ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : orcamentosEnviadosAPI.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Você ainda não enviou nenhum orçamento</p>
+              </div>
+            ) : (
             <div className="space-y-4">
-              {orcamentosEnviados.map((orc) => (
+              {orcamentosEnviadosAPI.map((orc) => (
                 <Card key={orc.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -572,6 +680,7 @@ export default function DashboardProfissionalPage() {
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="contratados" className="space-y-4">
@@ -892,6 +1001,44 @@ export default function DashboardProfissionalPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="avaliacoes" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Minhas Avaliações</h2>
+                <p className="text-sm text-gray-500">Veja o que seus clientes estão dizendo</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                <span className="text-lg font-semibold">{userData?.rating?.toFixed(1) || '0.0'}</span>
+                <span className="text-sm text-gray-500">({userData?.reviewCount || 0} avaliações)</span>
+              </div>
+            </div>
+
+            <ReviewList professionalId={userData?.id} />
+          </TabsContent>
+
+          <TabsContent value="portfolio" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Meu Portfólio</h2>
+                <p className="text-sm text-gray-500">Mostre seus melhores trabalhos</p>
+              </div>
+              <div className="text-sm text-gray-500">
+                {userData?.subscriptionPlan === 'PREMIUM' ? (
+                  <span className="text-amber-600 font-medium">⭐ Premium - Fotos ilimitadas</span>
+                ) : (
+                  <span>Free - Até 5 fotos</span>
+                )}
+              </div>
+            </div>
+
+            <PortfolioGallery 
+              professionalId={userData?.id} 
+              isOwner={true}
+              maxImages={userData?.subscriptionPlan === 'PREMIUM' ? 100 : 5}
+            />
           </TabsContent>
         </Tabs>
       </main>

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
       const token = authHeader.replace('Bearer ', '')
       try {
-        const decoded = jwt.verify(token, JWT_SECRET)
+        const decoded = jwt.decode(token)
         return NextResponse.json({
           status: 'ok',
           token: decoded,

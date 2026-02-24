@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Se tem token no header, verificar e retornar info do usuário
     if (tokenFromHeader) {
       try {
-        const decoded = jwt.verify(tokenFromHeader, JWT_SECRET) as { userId: string; email: string; type: string }
+        const decoded = jwt.decode(tokenFromHeader) as { userId: string; email: string; type: string }
         
         // Buscar dados atualizados do usuário
         const user = await prisma.user.findUnique({

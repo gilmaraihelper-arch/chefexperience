@@ -59,7 +59,14 @@ const especialidades = [
   'Japonesa', 'Mexicana', 'Árabe', 'Mediterrânea', 'Churrasco',
   'Frutos do Mar', 'Vegetariana', 'Vegana', 'Sem Glúten', 'Sem Lactose',
   'Doces e Sobremesas', 'Padaria', 'Finger Food', 'Gastronomia Molecular',
-  'Cozinha de Autor', 'Comida de Rua', 'Regional', 'Outros'
+  'Cozinha de Autor', 'Comida de Rua', 'Regional',
+  // Especialidades específicas adicionadas
+  'Coffee Break', 'Antepastos', 'Aperitivos', 'Canapés', 'Petiscos',
+  'Carnes', 'Aves', 'Peixes', 'Massas Frescas', 'Risotos',
+  'Sushis e Sashimis', 'Ceviches', 'Caldos e Sopas', 'Saladas',
+  'Tortas Salgadas', 'Salgados de Festa', 'Pães Artesanais',
+  'Cerveja Artesanal', 'Vinhos', 'Cocktails', 'Drinks Sem Álcool',
+  'Outros'
 ];
 
 const faixasPreco = [
@@ -779,7 +786,22 @@ export default function CadastroProfissionalPage() {
 
             {/* Tipos de Evento */}
             <div>
-              <Label className="text-base font-semibold mb-4 block">Tipos de Evento que Atende *</Label>
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-base font-semibold">Tipos de Evento que Atende *</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (formData.tiposEvento.length === tiposEvento.length) {
+                      setFormData((prev: any) => ({ ...prev, tiposEvento: [] }));
+                    } else {
+                      setFormData((prev: any) => ({ ...prev, tiposEvento: tiposEvento.map(t => t.id) }));
+                    }
+                  }}
+                  className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  {formData.tiposEvento.length === tiposEvento.length ? 'Desmarcar todos' : 'Selecionar todos'}
+                </button>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {tiposEvento.map((tipo) => (
                   <button
@@ -1020,7 +1042,23 @@ export default function CadastroProfissionalPage() {
 
             {/* Formas de Pagamento */}
             <div>
-              <Label className="text-base font-semibold mb-4 block">Formas de Pagamento Aceitas</Label>
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-base font-semibold">Formas de Pagamento Aceitas</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const formas = ['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Boleto', 'Transferência'];
+                    if (formData.formasPagamento.length === formas.length) {
+                      setFormData((prev: any) => ({ ...prev, formasPagamento: [] }));
+                    } else {
+                      setFormData((prev: any) => ({ ...prev, formasPagamento: formas }));
+                    }
+                  }}
+                  className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  {formData.formasPagamento.length === 6 ? 'Desmarcar todas' : 'Selecionar todas'}
+                </button>
+              </div>
               <div className="flex flex-wrap gap-3">
                 {['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Boleto', 'Transferência'].map((forma) => (
                   <button
@@ -1041,7 +1079,23 @@ export default function CadastroProfissionalPage() {
 
             {/* Disponibilidade */}
             <div>
-              <Label className="text-base font-semibold mb-4 block">Dias da Semana Disponíveis</Label>
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-base font-semibold">Dias da Semana Disponíveis</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+                    if (formData.diasSemana.length === dias.length) {
+                      setFormData((prev: any) => ({ ...prev, diasSemana: [] }));
+                    } else {
+                      setFormData((prev: any) => ({ ...prev, diasSemana: dias }));
+                    }
+                  }}
+                  className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                >
+                  {formData.diasSemana.length === 7 ? 'Desmarcar todos' : 'Todos os dias'}
+                </button>
+              </div>
               <div className="flex flex-wrap gap-3">
                 {['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'].map((dia) => (
                   <button

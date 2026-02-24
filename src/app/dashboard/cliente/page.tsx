@@ -14,12 +14,26 @@ import {
   Users,
   CheckCircle2,
   MessageSquare,
-  LogOut
+  LogOut,
+  User,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { AlertTriangle } from 'lucide-react';
+
+import { NotificationBell } from '@/components/notifications';
+import { StarRating } from '@/components/star-rating';
 
 export default function DashboardClientePage() {
   const router = useRouter();
@@ -34,6 +48,14 @@ export default function DashboardClientePage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [propostasRecebidas, setPropostasRecebidas] = useState<any[]>([]);
   const [loadingPropostas, setLoadingPropostas] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  
+  // Modal de cancelamento
+  const [eventoParaCancelar, setEventoParaCancelar] = useState<any>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  
   const profissionaisFavoritos: any[] = [];
   const meusEventos: any[] = [];
 
@@ -48,6 +70,10 @@ export default function DashboardClientePage() {
     }
     setHasToken(!!localStorage.getItem('token'));
     setAuthChecked(true);
+  }, []);
+  
+  useEffect(() => {
+    setIsClient(true);
   }, []);
   
   useEffect(() => {
@@ -198,6 +224,37 @@ export default function DashboardClientePage() {
     fetchPropostas();
   }, [status, hasToken]);
 
+  // Função para cancelar evento
+  const handleCancelarEvento = async () => {
+    if (!eventoParaCancelar) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      setCancelando(true);
+      const res = await fetch(`/api/events/${eventoParaCancelar.id}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        // Atualizar lista de eventos
+        setEventos(prev => prev.map(e => 
+          e.id === eventoParaCancelar.id ? { ...e, status: 'CANCELLED' } : e
+        ));
+        setShowCancelModal(false);
+        setEventoParaCancelar(null);
+      } else {
+        console.error('Erro ao cancelar evento:', res.status);
+      }
+    } catch (err) {
+      console.error('Erro ao cancelar evento:', err);
+    } finally {
+      setCancelando(false);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
@@ -209,6 +266,15 @@ export default function DashboardClientePage() {
   // Permite acesso se tem token no localStorage OU sessão NextAuth
   if (authChecked && !session && !hasToken) {
     return null;
+  }
+
+  // Prevenir hydration mismatch
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-orange-50/30 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
@@ -227,6 +293,7 @@ export default function DashboardClientePage() {
             </Link>
             
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -235,12 +302,54 @@ export default function DashboardClientePage() {
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Evento
               </Button>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-                {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
+              
+              {/* User Menu Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {session?.user?.name ? session.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : session?.user?.email?.[0].toUpperCase() || 'U'}
+                  </div>
+                </button>
+                
+                {showUserMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowUserMenu(false)} 
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          router.push('/cadastro/cliente');
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4" />
+                        Editar Perfil
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1" />
+                      
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('token');
+                          localStorage.removeItem('user');
+                          router.push('/logout');
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sair
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button variant="ghost" size="sm" onClick={() => router.push('/logout')}>
-                <LogOut className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         </div>
@@ -298,7 +407,9 @@ export default function DashboardClientePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-500 text-sm">Contratados</p>
-                  <p className="text-2xl font-bold text-gray-900">3</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {eventos.filter((e: any) => e.hiredProposalId || e.hiredProposal).length}
+                  </p>
                 </div>
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
@@ -382,19 +493,43 @@ export default function DashboardClientePage() {
                         <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                           {evento.proposals.length} propostas recebidas
                         </Badge>
-                        <Button 
-                          size="sm" 
-                          className="bg-gradient-to-r from-amber-500 to-orange-600"
-                          onClick={() => router.push(`/evento/${evento.id}/propostas`)}
-                        >
-                          Ver Propostas
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => {
+                              setEventoParaCancelar(evento);
+                              setShowCancelModal(true);
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-gradient-to-r from-amber-500 to-orange-600"
+                            onClick={() => router.push(`/evento/${evento.id}/propostas`)}
+                          >
+                            Ver Propostas
+                          </Button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="mt-4">
+                      <div className="mt-4 flex items-center justify-between">
                         <Badge variant="secondary" className="bg-gray-100 text-gray-600">
                           Nenhuma proposta ainda
                         </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => {
+                            setEventoParaCancelar(evento);
+                            setShowCancelModal(true);
+                          }}
+                        >
+                          Cancelar
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -474,10 +609,8 @@ export default function DashboardClientePage() {
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">{prof.nome}</h3>
                         <p className="text-sm text-gray-500">{prof.especialidade}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                          <span className="text-sm font-medium">{prof.rating}</span>
-                          <span className="text-sm text-gray-400">({prof.avaliacoes} avaliações)</span>
+                        <div className="mt-1">
+                          <StarRating rating={prof.rating} size="sm" reviewCount={prof.avaliacoes} />
                         </div>
                       </div>
                       <Button size="sm" variant="outline">
@@ -492,7 +625,7 @@ export default function DashboardClientePage() {
 
           <TabsContent value="contratados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Profissionais Contratados</h2>
-            {meusEventos.filter(e => e.status === 'contratado' || e.status === 'concluido').map((evento) => (
+            {meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').map((evento) => (
               <Card key={evento.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -505,8 +638,8 @@ export default function DashboardClientePage() {
                       <p className="text-xl font-bold text-amber-600">
                         R$ {evento.valor?.toLocaleString('pt-BR')}
                       </p>
-                      <Badge className={evento.status === 'concluido' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
-                        {evento.status === 'concluido' ? 'Concluído' : 'Em andamento'}
+                      <Badge className={evento.status === 'COMPLETED' || new Date(evento.date) < new Date() ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
+                        {evento.status === 'COMPLETED' || new Date(evento.date) < new Date() ? 'Concluído' : 'Em andamento'}
                       </Badge>
                     </div>
                   </div>
@@ -515,6 +648,42 @@ export default function DashboardClientePage() {
             ))}
           </TabsContent>
         </Tabs>
+        
+        {/* Modal de Confirmação de Cancelamento */}
+        <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                Cancelar Evento
+              </DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja cancelar o evento <strong>{eventoParaCancelar?.name}</strong>?
+                <br /><br />
+                Esta ação não pode ser desfeita. Todas as propostas serão canceladas automaticamente.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setEventoParaCancelar(null);
+                }}
+                disabled={cancelando}
+              >
+                Não, manter evento
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelarEvento}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando...' : 'Sim, cancelar evento'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

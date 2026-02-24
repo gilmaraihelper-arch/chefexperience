@@ -480,9 +480,37 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Pegar token do localStorage ou gerar um novo baseado na sessão
+      let token = localStorage.getItem('token');
+      
+      // Se não tem token no localStorage mas tem sessão NextAuth, buscar token
+      if (!token && session?.user?.email) {
+        try {
+          const tokenRes = await fetch('/api/auth/setup-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: session.user.email })
+          });
+          const tokenData = await tokenRes.json();
+          if (tokenData.success && tokenData.token) {
+            const newToken: string = tokenData.token;
+            token = newToken;
+            localStorage.setItem('token', newToken);
+            localStorage.setItem('user', JSON.stringify(tokenData.user));
+          }
+        } catch (e) {
+          console.log('Erro ao gerar token:', e);
+        }
+      }
+      
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
       // USERS
-      const usersRes = await fetch('/api/admin/users');
+      const usersRes = await fetch('/api/admin/users', { headers });
       if (usersRes.ok) {
         const data = await usersRes.json();
         const mappedUsers: AdminUser[] = data.users.map((u: any) => ({
@@ -504,7 +532,7 @@ export default function AdminDashboardPage() {
       }
 
       // DASHBOARD
-      const dashRes = await fetch('/api/admin/dashboard');
+      const dashRes = await fetch('/api/admin/dashboard', { headers });
       if (dashRes.ok) {
         const data: AdminDashboardStatsResponse = await dashRes.json();
         if (data.stats) {
@@ -547,7 +575,11 @@ export default function AdminDashboardPage() {
     if (!confirm('Tem certeza que deseja deletar este usuário?')) return;
 
     try {
-      const res = await fetch(`/api/admin/users?id=${userId}`, { method: 'DELETE' });
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/users?id=${userId}`, { 
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
@@ -568,9 +600,13 @@ export default function AdminDashboardPage() {
 
   const handleToggleUserStatus = async (user: AdminUser) => {
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         body: JSON.stringify({ id: user.id, isActive: user.status === 'inactive' }),
       });
       if (res.ok) {
@@ -594,7 +630,10 @@ export default function AdminDashboardPage() {
   // Buscar usuários de teste específicos
   const handleFindTestUsers = async () => {
     try {
-      const res = await fetch('/api/admin/find-test-users');
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/admin/find-test-users', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         const data = await res.json();
         console.log('Usuários encontrados:', data);
