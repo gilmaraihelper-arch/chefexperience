@@ -58,7 +58,8 @@ Senha: chef123
 
 - **Status:** ✅ 100% Concluído (2026-02-22)
 - **Produção:** https://chefexperience.vercel.app
-- **Últimos fixes (22/02):** Admin panel - promoção user para ADMIN via API; Evento status - filtro corrigido para usar hiredProposalId após contratação
+- **Último deploy:** 25/02/2026 (00:23) - Carrega propostas enviadas na inicialização
+- **Últimos fixes (25/02):** Carrega propostas enviadas na inicialização da página; Corrige filtro de eventos ao enviar proposta e adiciona contador em 'enviados'; Filtra eventos já propostos e corrige contador dinâmico
 
 ## 📋 QA Report (2026-02-22)
 
@@ -120,5 +121,5 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-02-24*
+*Última atualização: 2026-02-25*
 *QA Engineer: Carol*
