@@ -805,6 +805,13 @@ export default function DashboardClientePage() {
                                 <MessageSquare className="w-4 h-4 mr-1" />
                                 Conversar
                               </Button>
+                              <Button 
+                                size="sm" 
+                                className="mt-2 w-full bg-gradient-to-r from-amber-500 to-orange-600"
+                                onClick={() => router.push(`/evento/${evento.id}/propostas`)}
+                              >
+                                Ver Detalhes
+                              </Button>
                             </div>
                           )}
                         </div>
