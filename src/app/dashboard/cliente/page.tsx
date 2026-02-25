@@ -754,14 +754,14 @@ export default function DashboardClientePage() {
 
           <TabsContent value="contratados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Profissionais Contratados</h2>
-            {meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').length === 0 ? (
+            {eventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'CLOSED').length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>Você ainda não contratou nenhum profissional</p>
                 <p className="text-sm mt-2">Aceite uma proposta para ver o chef aqui</p>
               </div>
             ) : (
-              meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').map((evento) => {
-                const chef = evento.hiredProposal?.professional;
+              eventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'CLOSED').map((evento) => {
+                const chef = evento.hiredProposal?.professional || evento.professional;
                 return (
                   <Card key={evento.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
