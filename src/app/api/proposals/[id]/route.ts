@@ -161,7 +161,7 @@ export async function PUT(
           
           // Notificação in-app para o cliente
           await createNotification({
-            userId: user.userId,
+            userId: user.userId!,
             type: 'HIRING_CONFIRMED',
             title: 'Chef contratado! ✅',
             message: `Você contratou ${professional.user.name} para o evento "${proposal.event.name}" por R$ ${proposal.totalPrice.toLocaleString('pt-BR')}`,
