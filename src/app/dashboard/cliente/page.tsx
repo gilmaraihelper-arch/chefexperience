@@ -625,27 +625,61 @@ export default function DashboardClientePage() {
 
           <TabsContent value="contratados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Profissionais Contratados</h2>
-            {meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').map((evento) => (
-              <Card key={evento.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{evento.profissional}</h3>
-                      <p className="text-sm text-gray-500">{evento.nome}</p>
-                      <p className="text-sm text-gray-400">{new Date(evento.data).toLocaleDateString('pt-BR')}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-amber-600">
-                        R$ {evento.valor?.toLocaleString('pt-BR')}
-                      </p>
-                      <Badge className={evento.status === 'COMPLETED' || new Date(evento.date) < new Date() ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
-                        {evento.status === 'COMPLETED' || new Date(evento.date) < new Date() ? 'Concluído' : 'Em andamento'}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Você ainda não contratou nenhum profissional</p>
+                <p className="text-sm mt-2">Aceite uma proposta para ver o chef aqui</p>
+              </div>
+            ) : (
+              meusEventos.filter(e => e.hiredProposalId || e.hiredProposal || e.status === 'COMPLETED').map((evento) => {
+                const chef = evento.hiredProposal?.professional;
+                return (
+                  <Card key={evento.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{evento.profissional || chef?.user?.name || 'Chef'}</h3>
+                          <p className="text-sm text-gray-500">{evento.nome || evento.name}</p>
+                          <p className="text-sm text-gray-400">{new Date(evento.data || evento.date).toLocaleDateString('pt-BR')}</p>
+                          
+                          {chef && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <p className="text-xs font-semibold text-amber-700 mb-2">📞 Contato do chef:</p>
+                              {chef.user?.email && (
+                                <a 
+                                  href={`mailto:${chef.user.email}`}
+                                  className="text-sm text-blue-600 hover:underline block mb-1"
+                                >
+                                  ✉️ {chef.user.email}
+                                </a>
+                              )}
+                              {chef.phone && (
+                                <a 
+                                  href={`https://wa.me/${chef.phone.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-green-600 hover:underline block"
+                                >
+                                  📱 {chef.phone}
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-amber-600">
+                            R$ {(evento.valor || evento.hiredProposal?.totalPrice)?.toLocaleString('pt-BR')}
+                          </p>
+                          <Badge className={evento.status === 'COMPLETED' || new Date(evento.date || evento.data) < new Date() ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
+                            {evento.status === 'COMPLETED' || new Date(evento.date || evento.data) < new Date() ? 'Concluído' : 'Em andamento'}
+                          </Badge>
+                        </div>
+                      </div>                    
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </TabsContent>
         </Tabs>
         

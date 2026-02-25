@@ -833,9 +833,28 @@ export default function DashboardProfissionalPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">{evento.evento}</h3>
                         <p className="text-sm text-gray-500">{evento.cliente}</p>
-                        {evento.email && (
-                          <p className="text-xs text-gray-400">{evento.email}</p>
-                        )}
+                        
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-xs font-semibold text-amber-700 mb-1">📞 Contato do cliente:</p>
+                          {evento.email && (
+                            <a 
+                              href={`mailto:${evento.email}`}
+                              className="text-xs text-blue-600 hover:underline block mb-1"
+                            >
+                              ✉️ {evento.email}
+                            </a>
+                          )}
+                          {evento.phone && (
+                            <a 
+                              href={`https://wa.me/${evento.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-green-600 hover:underline block"
+                            >
+                              📱 {evento.phone}
+                            </a>
+                          )}
+                        </div>
                       </div>
                       <Badge className="bg-green-100 text-green-700">Confirmado</Badge>
                     </div>

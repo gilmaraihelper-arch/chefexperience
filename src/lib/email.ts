@@ -154,10 +154,12 @@ export const emailTemplates = {
     `,
   }),
 
-  // 4. Proposta aceita (notificar profissional)
+  // 4. Proposta aceita (notificar profissional) - com dados do cliente
   proposalAccepted: (data: {
     professionalName: string;
     clientName: string;
+    clientEmail?: string;
+    clientPhone?: string;
     eventTitle: string;
     proposalValue: number;
     eventId: string;
@@ -180,13 +182,69 @@ export const emailTemplates = {
             </p>
           </div>
           
+          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #92400E;">📞 Dados de contato do cliente:</h3>
+            <p><strong>Nome:</strong> ${data.clientName}</p>
+            ${data.clientEmail ? `<p><strong>Email:</strong> ${data.clientEmail}</p>` : ''}
+            ${data.clientPhone ? `<p><strong>Telefone:</strong> ${data.clientPhone}</p>` : ''}
+          </div>
+          
           <p>Entre em contato com o cliente para combinar os detalhes finais.</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://chefexperience.vercel.app/evento/${data.eventId}" 
+            <a href="https://chefexperience.vercel.app/dashboard/profissional" 
                style="background: #10B981; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 8px; display: inline-block;">
-              Ver Evento
+              Ver no Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+
+  // 4.5. Confirmação de contratação (notificar cliente)
+  hiringConfirmed: (data: {
+    clientName: string;
+    professionalName: string;
+    professionalEmail?: string;
+    professionalPhone?: string;
+    eventTitle: string;
+    proposalValue: number;
+    eventId: string;
+  }) => ({
+    subject: '✅ Chef contratado com sucesso!',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #F59E0B, #EA580C); padding: 30px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Chef Contratado! ✅</h2>
+        </div>
+        
+        <div style="padding: 30px; background: white;">
+          <p>Olá <strong>${data.clientName}</strong>,</p>
+          
+          <p>Você contratou <strong>${data.professionalName}</strong> para o evento <strong>"${data.eventTitle}"</strong>!</p>
+          
+          <div style="background: #D1FAE5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <p style="font-size: 20px; color: #059669; margin: 0;">
+              Valor contratado: R$ ${data.proposalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          
+          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #92400E;">📞 Dados de contato do chef:</h3>
+            <p><strong>Nome:</strong> ${data.professionalName}</p>
+            ${data.professionalEmail ? `<p><strong>Email:</strong> ${data.professionalEmail}</p>` : ''}
+            ${data.professionalPhone ? `<p><strong>Telefone:</strong> ${data.professionalPhone}</p>` : ''}
+          </div>
+          
+          <p>Entre em contato com o chef para combinar os detalhes finais do evento.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://chefexperience.vercel.app/dashboard/cliente" 
+               style="background: linear-gradient(135deg, #F59E0B, #EA580C); color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 8px; display: inline-block;">
+              Ver no Dashboard
             </a>
           </div>
         </div>

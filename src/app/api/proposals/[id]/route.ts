@@ -97,16 +97,18 @@ export async function PUT(
         });
 
         if (professional?.user) {
-          const { sendEmail, emailTemplates } = await import('@/lib/email');
-          
           const client = await prisma.user.findUnique({
             where: { id: user.userId }
           });
           
-          // Email
+          const { sendEmail, emailTemplates } = await import('@/lib/email');
+          
+          // Email para o profissional com dados do cliente
           const template = emailTemplates.proposalAccepted({
             professionalName: professional.user.name,
             clientName: client?.name || 'Cliente',
+            clientEmail: client?.email,
+            clientPhone: clientProfile.phone,
             eventTitle: proposal.event.name,
             proposalValue: proposal.totalPrice,
             eventId: proposal.eventId
@@ -120,7 +122,26 @@ export async function PUT(
           
           console.log('📧 Email de proposta aceita enviado para:', professional.user.email);
           
-          // Notificação in-app
+          // Email de confirmação para o cliente com dados do profissional
+          const clientTemplate = emailTemplates.hiringConfirmed({
+            clientName: client?.name || 'Cliente',
+            professionalName: professional.user.name,
+            professionalEmail: professional.user.email,
+            professionalPhone: professional.phone,
+            eventTitle: proposal.event.name,
+            proposalValue: proposal.totalPrice,
+            eventId: proposal.eventId
+          });
+          
+          await sendEmail({
+            to: client?.email || '',
+            subject: clientTemplate.subject,
+            html: clientTemplate.html
+          });
+          
+          console.log('📧 Email de confirmação enviado para:', client?.email);
+          
+          // Notificação in-app para o profissional
           const { createNotification } = await import('@/lib/notifications');
           await createNotification({
             userId: professional.user.id,
@@ -131,13 +152,32 @@ export async function PUT(
               proposalId: proposalId,
               eventId: proposal.eventId,
               clientName: client?.name || 'Cliente',
+              clientEmail: client?.email,
+              clientPhone: clientProfile.phone,
               value: proposal.totalPrice
             },
             actionUrl: `/dashboard/profissional`
           });
+          
+          // Notificação in-app para o cliente
+          await createNotification({
+            userId: user.userId,
+            type: 'HIRING_CONFIRMED',
+            title: 'Chef contratado! ✅',
+            message: `Você contratou ${professional.user.name} para o evento "${proposal.event.name}" por R$ ${proposal.totalPrice.toLocaleString('pt-BR')}`,
+            data: {
+              proposalId: proposalId,
+              eventId: proposal.eventId,
+              professionalName: professional.user.name,
+              professionalEmail: professional.user.email,
+              professionalPhone: professional.phone,
+              value: proposal.totalPrice
+            },
+            actionUrl: `/dashboard/cliente`
+          });
         }
       } catch (notifyError) {
-        console.error('Erro ao notificar profissional:', notifyError);
+        console.error('Erro ao notificar:', notifyError);
       }
 
       return NextResponse.json({ success: true, message: 'Proposta aceita!' })
