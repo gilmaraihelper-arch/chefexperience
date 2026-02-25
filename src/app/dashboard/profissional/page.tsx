@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NotificationBell } from '@/components/notifications';
 import { useSession } from 'next-auth/react';
-import { 
-  ChefHat, 
-  Calendar, 
-  DollarSign, 
-  Star, 
+import {
+  ChefHat,
+  Calendar,
+  DollarSign,
+  Star,
   Search,
   Users,
   Clock,
@@ -29,7 +29,22 @@ import {
   LogOut,
   User,
   Menu,
-  X
+  X,
+  UtensilsCrossed,
+  Flame,
+  Wine,
+  GlassWater,
+  PartyPopper,
+  Music,
+  Camera,
+  CupSoda,
+  Cake,
+  Utensils,
+  Info,
+  AlertCircle,
+  Home,
+  Sparkles,
+  Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1121,13 +1136,198 @@ export default function DashboardProfissionalPage() {
           
           {eventoSelecionado && (
             <div className="space-y-4">
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900">{eventoSelecionado.name || eventoSelecionado.evento}</h4>
-                <p className="text-sm text-gray-600">{eventoSelecionado.client?.user?.name || eventoSelecionado.cliente}</p>
-                <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-500">
-                  <span>📅 {(eventoSelecionado.date || eventoSelecionado.data) ? new Date(eventoSelecionado.date || eventoSelecionado.data).toLocaleDateString('pt-BR') : 'Data não informada'}</span>
-                  <span>👥 {eventoSelecionado.guestCount || eventoSelecionado.pessoas || 0} pessoas</span>
+              <div className="bg-amber-50 p-4 rounded-lg space-y-4">
+                {/* Cabeçalho do Evento */}
+                <div className="border-b border-amber-200 pb-3">
+                  <h4 className="font-semibold text-gray-900 text-lg">{eventoSelecionado.name || eventoSelecionado.evento}</h4>
+                  <p className="text-sm text-gray-600">{eventoSelecionado.client?.user?.name || eventoSelecionado.cliente}</p>
                 </div>
+
+                {/* Seção: Local e Data */}
+                <div>
+                  <h5 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Local e Data
+                  </h5>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Calendar className="w-4 h-4 text-amber-500" />
+                      <span>{(eventoSelecionado.date || eventoSelecionado.data) ? new Date(eventoSelecionado.date || eventoSelecionado.data).toLocaleDateString('pt-BR') : 'Data não informada'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Clock className="w-4 h-4 text-amber-500" />
+                      <span>{eventoSelecionado.startTime || 'Horário não informado'} {eventoSelecionado.duration && `(${eventoSelecionado.duration}h)`}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700 col-span-2">
+                      <MapPin className="w-4 h-4 text-amber-500" />
+                      <span>
+                        {eventoSelecionado.address ? (
+                          <>{eventoSelecionado.address}, {eventoSelecionado.city} - {eventoSelecionado.state}</>
+                        ) : eventoSelecionado.city ? (
+                          <>{eventoSelecionado.city} - {eventoSelecionado.state}</>
+                        ) : (
+                          'Local não informado'
+                        )}
+                      </span>
+                    </div>
+                    {(eventoSelecionado.hasKitchen || eventoSelecionado.possuiCozinha) && (
+                      <div className="flex items-center gap-2 text-gray-700 col-span-2">
+                        <Home className="w-4 h-4 text-amber-500" />
+                        <span className="text-amber-700 font-medium">Possui cozinha no local</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Seção: Detalhes do Evento */}
+                <div>
+                  <h5 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Info className="w-3 h-3" /> Detalhes do Evento
+                  </h5>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {eventoSelecionado.eventType && (
+                      <Badge className="bg-orange-100 text-orange-700">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        {eventoSelecionado.eventType}
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                      <Users className="w-3 h-3 mr-1" />
+                      {eventoSelecionado.guestCount || eventoSelecionado.pessoas || 0} pessoas
+                    </Badge>
+                    {eventoSelecionado.priceRange && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-700">
+                        <Wallet className="w-3 h-3 mr-1" />
+                        {eventoSelecionado.priceRange}
+                      </Badge>
+                    )}
+                    {eventoSelecionado.maxBudget > 0 && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                        <DollarSign className="w-3 h-3 mr-1" />
+                        Máx: R$ {eventoSelecionado.maxBudget.toLocaleString('pt-BR')}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Seção: Serviços Solicitados */}
+                {(eventoSelecionado.cuisineStyles || eventoSelecionado.estilosCulinaria || eventoSelecionado.serviceTypes) && (
+                  <div>
+                    <h5 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <UtensilsCrossed className="w-3 h-3" /> Serviços Solicitados
+                    </h5>
+                    {(eventoSelecionado.cuisineStyles || eventoSelecionado.estilosCulinaria) && (
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 block mb-1">Estilos de culinária:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {(eventoSelecionado?.cuisineStyles ? JSON.parse(eventoSelecionado.cuisineStyles || '[]') : eventoSelecionado?.estilosCulinaria || []).map((estilo: string) => (
+                            <span key={estilo} className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                              {estilo}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {eventoSelecionado.serviceTypes && (
+                      <div>
+                        <span className="text-xs text-gray-500 block mb-1">Tipos de serviço:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {(typeof eventoSelecionado.serviceTypes === 'string' ? JSON.parse(eventoSelecionado.serviceTypes || '[]') : eventoSelecionado.serviceTypes || []).map((tipo: string) => (
+                            <span key={tipo} className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                              {tipo}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Seção: Necessidades Extras */}
+                {(eventoSelecionado.needsWaiter || eventoSelecionado.needsSoftDrinks || eventoSelecionado.needsAlcoholicDrinks ||
+                  eventoSelecionado.needsDecoration || eventoSelecionado.needsSoundLight || eventoSelecionado.needsPhotographer ||
+                  eventoSelecionado.needsBartender || eventoSelecionado.needsSweets || eventoSelecionado.needsCake || eventoSelecionado.needsPlatesCutlery) && (
+                  <div>
+                    <h5 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Necessidades Extras
+                    </h5>
+                    <div className="flex flex-wrap gap-1">
+                      {eventoSelecionado.needsWaiter && (
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                          <Users className="w-3 h-3 mr-1" /> Garçom
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsSoftDrinks && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                          <CupSoda className="w-3 h-3 mr-1" /> Bebidas não alcoólicas
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsAlcoholicDrinks && (
+                        <Badge variant="secondary" className="bg-red-100 text-red-700">
+                          <Wine className="w-3 h-3 mr-1" /> Bebidas alcoólicas
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsDecoration && (
+                        <Badge variant="secondary" className="bg-pink-100 text-pink-700">
+                          <PartyPopper className="w-3 h-3 mr-1" /> Decoração
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsSoundLight && (
+                        <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                          <Music className="w-3 h-3 mr-1" /> Som e luz
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsPhotographer && (
+                        <Badge variant="secondary" className="bg-teal-100 text-teal-700">
+                          <Camera className="w-3 h-3 mr-1" /> Fotógrafo
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsBartender && (
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                          <GlassWater className="w-3 h-3 mr-1" /> Bartender
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsSweets && (
+                        <Badge variant="secondary" className="bg-rose-100 text-rose-700">
+                          <Sparkles className="w-3 h-3 mr-1" /> Doces
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsCake && (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                          <Cake className="w-3 h-3 mr-1" /> Bolo
+                        </Badge>
+                      )}
+                      {eventoSelecionado.needsPlatesCutlery && (
+                        <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                          <Utensils className="w-3 h-3 mr-1" /> Pratos/copos
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Seção: Restrições Alimentares */}
+                {eventoSelecionado.dietaryRestrictions && (
+                  <div>
+                    <h5 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Restrições Alimentares
+                    </h5>
+                    <p className="text-sm text-gray-700 bg-white p-2 rounded border border-amber-200">
+                      {eventoSelecionado.dietaryRestrictions}
+                    </p>
+                  </div>
+                )}
+
+                {/* Seção: Descrição do Evento */}
+                {eventoSelecionado.description && (
+                  <div>
+                    <h5 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <FileText className="w-3 h-3" /> Descrição do Evento
+                    </h5>
+                    <p className="text-sm text-gray-700 bg-white p-2 rounded border border-amber-200 whitespace-pre-wrap">
+                      {eventoSelecionado.description}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
