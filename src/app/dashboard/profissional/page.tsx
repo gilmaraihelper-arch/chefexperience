@@ -73,6 +73,7 @@ export default function DashboardProfissionalPage() {
   const [showOrcamentoModal, setShowOrcamentoModal] = useState(false);
   const [showPacoteModal, setShowPacoteModal] = useState(false);
   const [eventoSelecionado, setEventoSelecionado] = useState<any>(null);
+  const [eventoContratadoSelecionado, setEventoContratadoSelecionado] = useState<any>(null);
   const [orcamentoData, setOrcamentoData] = useState({
     valor: '',
     mensagem: '',
@@ -873,11 +874,25 @@ export default function DashboardProfissionalPage() {
                         R$ {(evento.valor || 0).toLocaleString('pt-BR')}
                       </span>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            if (evento.phone) {
+                              window.open(`https://wa.me/${evento.phone.replace(/\D/g, '')}`, '_blank');
+                            } else if (evento.email) {
+                              window.location.href = `mailto:${evento.email}`;
+                            }
+                          }}
+                        >
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Chat
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => setEventoContratadoSelecionado(evento)}
+                        >
                           <Eye className="w-4 h-4 mr-2" />
                           Detalhes
                         </Button>
@@ -1618,6 +1633,83 @@ export default function DashboardProfissionalPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* Modal de Detalhes do Evento Contratado */}
+      <Dialog open={!!eventoContratadoSelecionado} onOpenChange={() => setEventoContratadoSelecionado(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Evento</DialogTitle>
+          </DialogHeader>
+          
+          {eventoContratadoSelecionado && (
+            <div className="space-y-4">
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 text-lg">{eventoContratadoSelecionado.evento}</h3>
+                <p className="text-gray-600">{eventoContratadoSelecionado.cliente}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4 text-amber-500" />
+                  <span>{new Date(eventoContratadoSelecionado.data).toLocaleDateString('pt-BR')}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="w-4 h-4 text-amber-500" />
+                  <span>{eventoContratadoSelecionado.pessoas} pessoas</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-amber-500" />
+                  <span>{eventoContratadoSelecionado.local}</span>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <p className="text-sm font-semibold text-amber-700 mb-2">📞 Contato do Cliente:</p>
+                {eventoContratadoSelecionado.email && (
+                  <a 
+                    href={`mailto:${eventoContratadoSelecionado.email}`}
+                    className="text-sm text-blue-600 hover:underline block mb-1"
+                  >
+                    ✉️ {eventoContratadoSelecionado.email}
+                  </a>
+                )}
+                {eventoContratadoSelecionado.phone && (
+                  <a 
+                    href={`https://wa.me/${eventoContratadoSelecionado.phone.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-green-600 hover:underline block"
+                  >
+                    📱 {eventoContratadoSelecionado.phone}
+                  </a>
+                )}
+              </div>
+              
+              <div className="pt-4 border-t flex justify-between items-center">
+                <span className="text-gray-600">Valor Contratado:</span>
+                <span className="text-2xl font-bold text-amber-600">
+                  R$ {(eventoContratadoSelecionado.valor || 0).toLocaleString('pt-BR')}
+                </span>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    if (eventoContratadoSelecionado.phone) {
+                      window.open(`https://wa.me/${eventoContratadoSelecionado.phone.replace(/\D/g, '')}`, '_blank');
+                    } else if (eventoContratadoSelecionado.email) {
+                      window.location.href = `mailto:${eventoContratadoSelecionado.email}`;
+                    }
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Abrir Chat
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
