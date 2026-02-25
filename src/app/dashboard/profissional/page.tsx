@@ -228,8 +228,11 @@ export default function DashboardProfissionalPage() {
   }, [status]);
 
   useEffect(() => {
-    if (abaAtiva === 'orcamentos') {
+    if (abaAtiva === 'enviados') {
       fetchOrcamentosEnviados();
+    }
+    if (abaAtiva === 'contratados') {
+      fetchEventosContratados();
     }
   }, [abaAtiva]);
 
@@ -274,6 +277,48 @@ export default function DashboardProfissionalPage() {
     }
   };
 
+  const fetchEventosContratados = async () => {
+    setLoadingContratados(true);
+    try {
+      let token = localStorage.getItem('token');
+      
+      if (!token) {
+        const tokenRes = await fetch('/api/auth/token');
+        const tokenData = await tokenRes.json();
+        if (tokenData.token) {
+          localStorage.setItem('token', tokenData.token);
+          token = tokenData.token;
+        }
+      }
+      
+      if (!token) return;
+      
+      const res = await fetch('/api/events?type=hired', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.events) {
+        const eventosFormatados = data.events.map((e: any) => ({
+          id: e.id,
+          evento: e.name,
+          cliente: e.client?.user?.name || 'Cliente',
+          email: e.client?.user?.email,
+          phone: e.client?.user?.phone,
+          data: e.date,
+          pessoas: e.guestCount,
+          valor: e.hiredProposal?.totalPrice,
+          local: e.city,
+          status: 'confirmado'
+        }));
+        setEventosContratados(eventosFormatados);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar eventos contratados:', err);
+    } finally {
+      setLoadingContratados(false);
+    }
+  };
+
   // Obter dados do usuário - só executar no cliente
   const [userData, setUserData] = useState<any>({});
   
@@ -297,7 +342,8 @@ export default function DashboardProfissionalPage() {
     'premium': 'Premium',
     'luxo': 'Luxo'
   };
-  const eventosContratados: any[] = [];
+  const [eventosContratados, setEventosContratados] = useState<any[]>([]);
+  const [loadingContratados, setLoadingContratados] = useState(false);
   const eventosCalendario: any[] = [];
 
   // Track auth state from localStorage
@@ -769,6 +815,16 @@ export default function DashboardProfissionalPage() {
 
           <TabsContent value="contratados" className="space-y-4">
             <h2 className="text-lg font-semibold mb-4">Eventos Contratados</h2>
+            {loadingContratados ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : eventosContratados.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Você ainda não tem eventos contratados</p>
+                <p className="text-sm mt-2">Quando um cliente aceitar sua proposta, o evento aparecerá aqui</p>
+              </div>
+            ) : (
             <div className="grid md:grid-cols-2 gap-4">
               {eventosContratados.map((evento) => (
                 <Card key={evento.id} className="hover:shadow-lg transition-shadow">
@@ -777,6 +833,9 @@ export default function DashboardProfissionalPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">{evento.evento}</h3>
                         <p className="text-sm text-gray-500">{evento.cliente}</p>
+                        {evento.email && (
+                          <p className="text-xs text-gray-400">{evento.email}</p>
+                        )}
                       </div>
                       <Badge className="bg-green-100 text-green-700">Confirmado</Badge>
                     </div>
@@ -809,6 +868,7 @@ export default function DashboardProfissionalPage() {
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="pacotes" className="space-y-4">

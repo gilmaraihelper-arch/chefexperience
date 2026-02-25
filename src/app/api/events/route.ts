@@ -28,7 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, eventType, date, guestCount, address } = body
+    const { 
+      name, eventType, date, guestCount, address, city, state, 
+      priceRange, description, cuisineStyles, serviceTypes,
+      needsWaiter, needsSoftDrinks, needsAlcoholicDrinks, needsDecoration,
+      needsSoundLight, needsPhotographer, needsBartender, needsSweets,
+      needsCake, needsPlatesCutlery, hasKitchen, dietaryRestrictions,
+      startTime, duration
+    } = body
 
     const clientProfile = await prisma.clientProfile.findUnique({
       where: { userId: user.userId }
@@ -48,29 +55,31 @@ export async function POST(request: NextRequest) {
         name: name || 'Evento sem nome',
         eventType: eventType || 'OUTROS',
         date: date ? new Date(date) : new Date(),
-        startTime: '19:00',
-        duration: '4',
+        startTime: startTime || '19:00',
+        duration: duration || '4',
         billingType: 'PF',
         locationType: 'CLIENT_ADDRESS',
         address: address || 'Endereço não informado',
-        city: 'Curitiba',
-        state: 'PR',
-        hasKitchen: false,
+        city: city || 'Curitiba',
+        state: state || 'PR',
+        hasKitchen: hasKitchen || false,
         guestCount: parseInt(guestCount) || 50,
         searchRadiusKm: 50,
-        cuisineStyles: '[]',
-        serviceTypes: '[]',
-        needsWaiter: false,
-        needsSoftDrinks: false,
-        needsAlcoholicDrinks: false,
-        needsDecoration: false,
-        needsSoundLight: false,
-        needsPhotographer: false,
-        needsBartender: false,
-        needsSweets: false,
-        needsCake: false,
-        needsPlatesCutlery: false,
-        priceRange: 'MEDIUM',
+        cuisineStyles: JSON.stringify(cuisineStyles || []),
+        serviceTypes: JSON.stringify(serviceTypes || []),
+        needsWaiter: needsWaiter || false,
+        needsSoftDrinks: needsSoftDrinks || false,
+        needsAlcoholicDrinks: needsAlcoholicDrinks || false,
+        needsDecoration: needsDecoration || false,
+        needsSoundLight: needsSoundLight || false,
+        needsPhotographer: needsPhotographer || false,
+        needsBartender: needsBartender || false,
+        needsSweets: needsSweets || false,
+        needsCake: needsCake || false,
+        needsPlatesCutlery: needsPlatesCutlery || false,
+        priceRange: priceRange || 'MEDIUM',
+        description: description || '',
+        dietaryRestrictions: dietaryRestrictions || '',
         referenceImages: '[]',
         status: 'OPEN',
       },
@@ -212,6 +221,32 @@ export async function GET(request: NextRequest) {
       })
 
       return NextResponse.json({ events: eventsWithMatch, version: API_VERSION })
+    }
+
+    // Eventos contratados pelo profissional
+    if (user.type === 'PROFESSIONAL' && type === 'hired') {
+      const professionalProfile = await prisma.professionalProfile.findUnique({
+        where: { userId: user.userId }
+      })
+
+      if (!professionalProfile) {
+        return NextResponse.json({ events: [], version: API_VERSION })
+      }
+
+      const events = await prisma.event.findMany({
+        where: {
+          hiredProposal: {
+            professionalId: professionalProfile.id
+          }
+        },
+        include: {
+          client: { include: { user: { select: { name: true, email: true, phone: true } } } },
+          hiredProposal: true,
+        },
+        orderBy: { updatedAt: 'desc' }
+      })
+
+      return NextResponse.json({ events, version: API_VERSION })
     }
 
     const clientProfile = await prisma.clientProfile.findUnique({
