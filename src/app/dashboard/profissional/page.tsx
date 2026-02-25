@@ -421,7 +421,22 @@ export default function DashboardProfissionalPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         const eventsData = await eventsRes.json();
-        if (eventsData.events) setEventosAPI(eventsData.events);
+        
+        // Buscar propostas atualizadas para filtrar corretamente
+        const proposalsRes = await fetch('/api/proposals', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const proposalsData = await proposalsRes.json();
+        
+        const proposedEventIds = new Set(
+          (proposalsData.proposals || []).map((p: any) => p.eventId)
+        );
+        
+        const availableEvents = (eventsData.events || []).filter(
+          (event: any) => !proposedEventIds.has(event.id)
+        );
+        
+        setEventosAPI(availableEvents);
         
         // Mostrar mensagem de sucesso
         alert('✅ Orçamento enviado com sucesso! Veja em "Orçamentos Enviados".');
@@ -585,7 +600,7 @@ export default function DashboardProfissionalPage() {
         <Tabs value={abaAtiva} onValueChange={setAbaAtiva}>
           <TabsList className="mb-6 flex-wrap h-auto">
             <TabsTrigger value="disponiveis">Disponíveis ({eventosAPI.length})</TabsTrigger>
-            <TabsTrigger value="enviados">Orçamentos Enviados</TabsTrigger>
+            <TabsTrigger value="enviados">Orçamentos Enviados ({orcamentosEnviadosAPI.length})</TabsTrigger>
             <TabsTrigger value="contratados">Contratados</TabsTrigger>
             <TabsTrigger value="pacotes">Meus Pacotes</TabsTrigger>
             <TabsTrigger value="calendario">Calendário</TabsTrigger>
