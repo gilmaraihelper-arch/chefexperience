@@ -1863,21 +1863,6 @@ export default function DashboardProfissionalPage() {
           )}
         </DialogContent>
       </Dialog>
-                    if (eventoContratadoSelecionado.phone) {
-                      window.open(`https://wa.me/${eventoContratadoSelecionado.phone.replace(/\D/g, '')}`, '_blank');
-                    } else if (eventoContratadoSelecionado.email) {
-                      window.location.href = `mailto:${eventoContratadoSelecionado.email}`;
-                    }
-                  }}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Entrar em Contato
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
