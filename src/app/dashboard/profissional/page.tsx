@@ -81,6 +81,17 @@ export default function DashboardProfissionalPage() {
     setIsClient(true);
   }, []);
 
+  // useEffect para forçar carregamento quando tem token no localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token && status === 'unauthenticated') {
+        // Forçar atualização para carregar dados com token
+        console.log('Token encontrado no localStorage, forçando carregamento...');
+      }
+    }
+  }, [status]);
+
   // useEffects vêm depois de todos os useState
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -112,26 +123,31 @@ export default function DashboardProfissionalPage() {
 
   useEffect(() => {
     async function fetchData() {
-      if (status !== 'authenticated') return;
+      // Verificar autenticação: sessão NextAuth OU token no localStorage
+      const token = localStorage.getItem('token');
+      const isAuthenticated = status === 'authenticated' || !!token;
+      
+      if (!isAuthenticated) {
+        console.log('Não autenticado, aguardando...');
+        setLoadingEventos(false);
+        return;
+      }
+      
       try {
-        let token = localStorage.getItem('token');
+        let authToken = localStorage.getItem('token');
         
-        // Se tem token no localStorage, verificar se é válido usando ele mesmo
-        if (token) {
+        // Se tem token no localStorage, verificar se é válido
+        if (authToken) {
           try {
-            // Usar o token existente para obter dados do usuário
             const tokenRes = await fetch('/api/auth/token', {
-              headers: { Authorization: `Bearer ${token}` }
+              headers: { Authorization: `Bearer ${authToken}` }
             });
-            if (tokenRes.ok) {
-              const tokenData = await tokenRes.json();
-              // Token válido, usar ele
-              console.log('Token válido do localStorage');
-            } else {
-              // Token expirado ou inválido, limpar
+            if (!tokenRes.ok) {
               console.log('Token inválido, limpando...');
               localStorage.removeItem('token');
-              token = null;
+              authToken = null;
+            } else {
+              console.log('Token válido do localStorage');
             }
           } catch (e) {
             console.log('Erro ao validar token:', e);
@@ -139,29 +155,32 @@ export default function DashboardProfissionalPage() {
         }
         
         // Se não tem token, buscar da API (para OAuth)
-        if (!token) {
+        if (!authToken && status === 'authenticated') {
           try {
             const tokenRes = await fetch('/api/auth/token');
             const tokenData = await tokenRes.json();
             if (tokenData.token) {
               localStorage.setItem('token', tokenData.token);
-              token = tokenData.token;
+              authToken = tokenData.token;
             }
           } catch (e) {
             console.log('Token não disponível');
           }
         }
         
-        if (!token) return;
+        if (!authToken) {
+          setLoadingEventos(false);
+          return;
+        }
         
         const eventsRes = await fetch('/api/events?type=available', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${authToken}` }
         });
         const eventsData = await eventsRes.json();
         if (eventsData.events) setEventosAPI(eventsData.events);
         
         const packagesRes = await fetch('/api/packages', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${authToken}` }
         });
         const packagesData = await packagesRes.json();
         if (packagesData.packages) setPacotesAPI(packagesData.packages);
