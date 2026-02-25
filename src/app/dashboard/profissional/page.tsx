@@ -177,7 +177,23 @@ export default function DashboardProfissionalPage() {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         const eventsData = await eventsRes.json();
-        if (eventsData.events) setEventosAPI(eventsData.events);
+        
+        // Buscar propostas enviadas para filtrar eventos já propostos
+        const proposalsRes = await fetch('/api/proposals', {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        const proposalsData = await proposalsRes.json();
+        
+        // Filtrar eventos que já têm propostas deste profissional
+        const proposedEventIds = new Set(
+          (proposalsData.proposals || []).map((p: any) => p.eventId)
+        );
+        
+        const availableEvents = (eventsData.events || []).filter(
+          (event: any) => !proposedEventIds.has(event.id)
+        );
+        
+        setEventosAPI(availableEvents);
         
         const packagesRes = await fetch('/api/packages', {
           headers: { Authorization: `Bearer ${authToken}` }
@@ -568,7 +584,7 @@ export default function DashboardProfissionalPage() {
         {/* Tabs */}
         <Tabs value={abaAtiva} onValueChange={setAbaAtiva}>
           <TabsList className="mb-6 flex-wrap h-auto">
-            <TabsTrigger value="disponiveis">Disponíveis (3)</TabsTrigger>
+            <TabsTrigger value="disponiveis">Disponíveis ({eventosAPI.length})</TabsTrigger>
             <TabsTrigger value="enviados">Orçamentos Enviados</TabsTrigger>
             <TabsTrigger value="contratados">Contratados</TabsTrigger>
             <TabsTrigger value="pacotes">Meus Pacotes</TabsTrigger>
