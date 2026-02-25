@@ -792,6 +792,19 @@ export default function DashboardClientePage() {
                                   📱 {chef.phone}
                                 </a>
                               )}
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="mt-2 w-full"
+                                onClick={() => handleConversar({
+                                  professional: chef,
+                                  event: evento,
+                                  totalPrice: evento.hiredProposal?.totalPrice || evento.valor
+                                })}
+                              >
+                                <MessageSquare className="w-4 h-4 mr-1" />
+                                Conversar
+                              </Button>
                             </div>
                           )}
                         </div>
