@@ -108,7 +108,7 @@ export async function PUT(
             professionalName: professional.user.name,
             clientName: client?.name || 'Cliente',
             clientEmail: client?.email,
-            clientPhone: clientProfile.phone,
+            clientPhone: client?.phone,
             eventTitle: proposal.event.name,
             proposalValue: proposal.totalPrice,
             eventId: proposal.eventId
@@ -153,7 +153,7 @@ export async function PUT(
               eventId: proposal.eventId,
               clientName: client?.name || 'Cliente',
               clientEmail: client?.email,
-              clientPhone: clientProfile.phone,
+              clientPhone: client?.phone,
               value: proposal.totalPrice
             },
             actionUrl: `/dashboard/profissional`
