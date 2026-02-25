@@ -246,7 +246,47 @@ export async function GET(request: NextRequest) {
         orderBy: { updatedAt: 'desc' }
       })
 
-      return NextResponse.json({ events, version: API_VERSION })
+      // Formatar eventos com todos os detalhes
+      const eventsWithDetails = events.map(event => ({
+        id: event.id,
+        name: event.name,
+        evento: event.name,
+        eventType: event.eventType,
+        date: event.date,
+        data: event.date,
+        startTime: event.startTime,
+        duration: event.duration,
+        guestCount: event.guestCount,
+        pessoas: event.guestCount,
+        address: event.address,
+        city: event.city,
+        state: event.state,
+        local: `${event.city} - ${event.state}`,
+        hasKitchen: event.hasKitchen,
+        priceRange: event.priceRange,
+        maxBudget: event.maxBudget,
+        cuisineStyles: event.cuisineStyles,
+        serviceTypes: event.serviceTypes,
+        description: event.description,
+        dietaryRestrictions: event.dietaryRestrictions,
+        needsWaiter: event.needsWaiter,
+        needsSoftDrinks: event.needsSoftDrinks,
+        needsAlcoholicDrinks: event.needsAlcoholicDrinks,
+        needsDecoration: event.needsDecoration,
+        needsSoundLight: event.needsSoundLight,
+        needsPhotographer: event.needsPhotographer,
+        needsBartender: event.needsBartender,
+        needsSweets: event.needsSweets,
+        needsCake: event.needsCake,
+        needsPlatesCutlery: event.needsPlatesCutlery,
+        cliente: event.client?.user?.name,
+        email: event.client?.user?.email,
+        phone: event.client?.user?.phone,
+        valor: event.hiredProposal?.totalPrice,
+        status: event.status,
+      }))
+
+      return NextResponse.json({ events: eventsWithDetails, version: API_VERSION })
     }
 
     const clientProfile = await prisma.clientProfile.findUnique({

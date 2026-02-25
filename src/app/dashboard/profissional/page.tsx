@@ -44,7 +44,9 @@ import {
   AlertCircle,
   Home,
   Sparkles,
-  Wallet
+  Wallet,
+  Heart,
+  Speaker
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1637,7 +1639,7 @@ export default function DashboardProfissionalPage() {
       </Dialog>
       {/* Modal de Detalhes do Evento Contratado */}
       <Dialog open={!!eventoContratadoSelecionado} onOpenChange={() => setEventoContratadoSelecionado(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Evento</DialogTitle>
           </DialogHeader>
@@ -1654,15 +1656,164 @@ export default function DashboardProfissionalPage() {
                   <Calendar className="w-4 h-4 text-amber-500" />
                   <span>{new Date(eventoContratadoSelecionado.data).toLocaleDateString('pt-BR')}</span>
                 </div>
+                {eventoContratadoSelecionado.startTime && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                    <span>{eventoContratadoSelecionado.startTime} {eventoContratadoSelecionado.duration && `(${eventoContratadoSelecionado.duration}h)`}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-amber-500" />
                   <span>{eventoContratadoSelecionado.pessoas} pessoas</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-amber-500" />
-                  <span>{eventoContratadoSelecionado.local}</span>
+                  <span>{eventoContratadoSelecionado.address || eventoContratadoSelecionado.local}</span>
                 </div>
+                
+                {eventoContratadoSelecionado.hasKitchen && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Home className="w-4 h-4 text-amber-500" />
+                    <span className="text-amber-700">Possui cozinha no local</span>
+                  </div>
+                )}
               </div>
+              
+              {/* Tipo de Evento */}
+              {eventoContratadoSelecionado.eventType && (
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Tipo de Evento</p>
+                  <Badge className="bg-orange-100 text-orange-700">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    {eventoContratadoSelecionado.eventType}
+                  </Badge>
+                </div>
+              )}
+              
+              {/* Estilos de Culinária */}
+              {eventoContratadoSelecionado.cuisineStyles && (() => {
+                try {
+                  const styles = JSON.parse(eventoContratadoSelecionado.cuisineStyles);
+                  if (styles.length === 0) return null;
+                  return (
+                    <div className="pt-2">
+                      <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Estilos de Culinária</p>
+                      <div className="flex flex-wrap gap-2">
+                        {styles.map((style: string) => (
+                          <Badge key={style} variant="secondary" className="bg-blue-100 text-blue-700">
+                            {style}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
+              
+              {/* Tipos de Serviço */}
+              {eventoContratadoSelecionado.serviceTypes && (() => {
+                try {
+                  const services = JSON.parse(eventoContratadoSelecionado.serviceTypes);
+                  if (services.length === 0) return null;
+                  return (
+                    <div className="pt-2">
+                      <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Tipos de Serviço</p>
+                      <div className="flex flex-wrap gap-2">
+                        {services.map((service: string) => (
+                          <Badge key={service} variant="secondary" className="bg-purple-100 text-purple-700">
+                            {service}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                } catch { return null; }
+              })()}
+              
+              {/* Necessidades Extras */}
+              {((eventoContratadoSelecionado.needsWaiter || eventoContratadoSelecionado.needsSoftDrinks || 
+                eventoContratadoSelecionado.needsAlcoholicDrinks || eventoContratadoSelecionado.needsDecoration ||
+                eventoContratadoSelecionado.needsSoundLight || eventoContratadoSelecionado.needsPhotographer ||
+                eventoContratadoSelecionado.needsBartender || eventoContratadoSelecionado.needsSweets ||
+                eventoContratadoSelecionado.needsCake || eventoContratadoSelecionado.needsPlatesCutlery)) && (
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Necessidades Extras</p>
+                  <div className="flex flex-wrap gap-2">
+                    {eventoContratadoSelecionado.needsWaiter && (
+                      <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                        <Briefcase className="w-3 h-3 mr-1" /> Garçom
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsSoftDrinks && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                        <Wine className="w-3 h-3 mr-1" /> Bebidas não alcoólicas
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsAlcoholicDrinks && (
+                      <Badge variant="secondary" className="bg-red-100 text-red-700">
+                        <Wine className="w-3 h-3 mr-1" /> Bebidas alcoólicas
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsDecoration && (
+                      <Badge variant="secondary" className="bg-pink-100 text-pink-700">
+                        <Sparkles className="w-3 h-3 mr-1" /> Decoração
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsSoundLight && (
+                      <Badge variant="secondary" className="bg-cyan-100 text-cyan-700">
+                        <Speaker className="w-3 h-3 mr-1" /> Som e Luz
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsPhotographer && (
+                      <Badge variant="secondary" className="bg-violet-100 text-violet-700">
+                        <Camera className="w-3 h-3 mr-1" /> Fotógrafo
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsBartender && (
+                      <Badge variant="secondary" className="bg-teal-100 text-teal-700">
+                        <GlassWater className="w-3 h-3 mr-1" /> Bartender
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsSweets && (
+                      <Badge variant="secondary" className="bg-rose-100 text-rose-700">
+                        <Heart className="w-3 h-3 mr-1" /> Doces
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsCake && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                        <Cake className="w-3 h-3 mr-1" /> Bolo
+                      </Badge>
+                    )}
+                    {eventoContratadoSelecionado.needsPlatesCutlery && (
+                      <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                        <Utensils className="w-3 h-3 mr-1" /> Pratos/copos
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Descrição */}
+              {eventoContratadoSelecionado.description && (
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2">Descrição do Evento</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded whitespace-pre-wrap">
+                    {eventoContratadoSelecionado.description}
+                  </p>
+                </div>
+              )}
+              
+              {/* Restrições Alimentares */}
+              {eventoContratadoSelecionado.dietaryRestrictions && (
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Restrições Alimentares
+                  </p>
+                  <p className="text-sm text-amber-800 bg-amber-100 p-3 rounded">
+                    {eventoContratadoSelecionado.dietaryRestrictions}
+                  </p>
+                </div>
+              )}
               
               <div className="pt-4 border-t">
                 <p className="text-sm font-semibold text-amber-700 mb-2">📞 Contato do Cliente:</p>
@@ -1697,6 +1848,21 @@ export default function DashboardProfissionalPage() {
                 <Button 
                   className="flex-1 bg-green-600 hover:bg-green-700"
                   onClick={() => {
+                    if (eventoContratadoSelecionado.phone) {
+                      window.open(`https://wa.me/${eventoContratadoSelecionado.phone.replace(/\D/g, '')}`, '_blank');
+                    } else if (eventoContratadoSelecionado.email) {
+                      window.location.href = `mailto:${eventoContratadoSelecionado.email}`;
+                    }
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Entrar em Contato
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
                     if (eventoContratadoSelecionado.phone) {
                       window.open(`https://wa.me/${eventoContratadoSelecionado.phone.replace(/\D/g, '')}`, '_blank');
                     } else if (eventoContratadoSelecionado.email) {
