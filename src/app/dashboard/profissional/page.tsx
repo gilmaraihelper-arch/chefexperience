@@ -200,6 +200,9 @@ export default function DashboardProfissionalPage() {
         });
         const packagesData = await packagesRes.json();
         if (packagesData.packages) setPacotesAPI(packagesData.packages);
+        
+        // Carregar propostas enviadas na inicialização
+        await fetchOrcamentosEnviados();
       } catch (err) {
         console.error('Erro ao buscar dados:', err);
       } finally {
