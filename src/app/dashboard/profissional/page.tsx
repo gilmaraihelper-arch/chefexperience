@@ -665,7 +665,7 @@ export default function DashboardProfissionalPage() {
           <TabsList className="mb-6 flex-wrap h-auto">
             <TabsTrigger value="disponiveis">Disponíveis ({eventosAPI.length})</TabsTrigger>
             <TabsTrigger value="enviados">Orçamentos Enviados ({orcamentosEnviadosAPI.length})</TabsTrigger>
-            <TabsTrigger value="contratados">Contratados</TabsTrigger>
+            <TabsTrigger value="contratados">Contratados ({eventosContratados.length})</TabsTrigger>
             <TabsTrigger value="pacotes">Meus Pacotes</TabsTrigger>
             <TabsTrigger value="calendario">Calendário</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
