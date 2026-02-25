@@ -394,6 +394,9 @@ export default function DashboardProfissionalPage() {
         });
         setShowOrcamentoModal(false);
         
+        // Mudar para aba de orçamentos enviados automaticamente
+        setAbaAtiva('orcamentos');
+        
         // Atualizar lista de orçamentos enviados
         await fetchOrcamentosEnviados();
         
@@ -403,6 +406,9 @@ export default function DashboardProfissionalPage() {
         });
         const eventsData = await eventsRes.json();
         if (eventsData.events) setEventosAPI(eventsData.events);
+        
+        // Mostrar mensagem de sucesso
+        alert('✅ Orçamento enviado com sucesso! Veja em "Orçamentos Enviados".');
       } else {
         const error = await response.json();
         alert(error.error || 'Erro ao enviar proposta');
