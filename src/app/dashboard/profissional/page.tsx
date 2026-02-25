@@ -393,6 +393,16 @@ export default function DashboardProfissionalPage() {
           anexarArquivo: false,
         });
         setShowOrcamentoModal(false);
+        
+        // Atualizar lista de orçamentos enviados
+        await fetchOrcamentosEnviados();
+        
+        // Atualizar lista de eventos disponíveis (remover o que foi proposto)
+        const eventsRes = await fetch('/api/events?type=available', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const eventsData = await eventsRes.json();
+        if (eventsData.events) setEventosAPI(eventsData.events);
       } else {
         const error = await response.json();
         alert(error.error || 'Erro ao enviar proposta');
