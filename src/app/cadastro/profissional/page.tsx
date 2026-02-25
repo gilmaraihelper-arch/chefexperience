@@ -307,82 +307,101 @@ export default function CadastroProfissionalPage() {
       console.log('📝 isOAuth:', isOAuth);
       console.log('📝 session?.user?.email:', session?.user?.email);
       
-      if (isOAuth && !session?.user?.email) {
-        throw new Error('Sessão não encontrada. Por favor, faça login novamente.');
+      // VERIFICAR SE TEM EMAIL PREENCHIDO (obrigatório para ambos os fluxos)
+      const userEmail = isOAuth ? session?.user?.email : formData.email;
+      if (!userEmail) {
+        throw new Error('Email é obrigatório. Por favor, preencha o email.');
       }
 
-      const url = '/api/auth/complete-profile-professional';
-
-      // Montar body completo com todos os dados (com fallback DOM para automação)
-      const body = {
-        // Dados básicos do usuário
-        email: session?.user?.email,
-        name: formData.nome || formData.razaoSocial || session?.user?.name || getDomValue('input[placeholder="Seu nome completo"]'),
-        type: 'PROFESSIONAL',
-        personType: tipoPessoa?.toUpperCase(),
-        cpf: formData.cpf || getDomValue('input[placeholder="000.000.000-00"]') || null,
-        cnpj: formData.cnpj || getDomValue('input[placeholder="00.000.000/0001-00"]') || null,
-        razaoSocial: formData.razaoSocial || getDomValue('input[placeholder="Nome da empresa"]') || null,
-        nomeFantasia: formData.nomeFantasia || null,
+      let response;
+      
+      if (isOAuth) {
+        // FLUXO OAuth: Usar complete-profile-professional (já está autenticado)
+        const url = '/api/auth/complete-profile-professional';
         
-        // Contato
-        phone: formData.telefone || getDomValue('input[placeholder="(00) 0000-0000"]'),
-        whatsapp: formData.whatsapp || getDomValue('input[placeholder="(00) 00000-0000"]') || null,
-        
-        // Endereço
-        cep: formData.cep || getDomValue('input[placeholder="00000-000"]'),
-        address: formData.endereco || getDomValue('input[placeholder="Rua/Avenida"]'),
-        number: formData.numero || getDomValue('input[placeholder="Número"]'),
-        complement: formData.complemento || getDomValue('input[placeholder="Complemento"]') || null,
-        neighborhood: formData.bairro || getDomValue('input[placeholder="Bairro"]'),
-        city: formData.cidade || getDomValue('input[placeholder="Cidade"]'),
-        state: formData.estado || getDomValue('input[placeholder="Estado"]'),
-        
-        // Descrição
-        description: formData.descricao,
-        differentials: formData.diferenciais,
-        experience: formData.experiencia,
+        const body = {
+          email: session?.user?.email,
+          name: formData.nome || formData.razaoSocial || session?.user?.name,
+          type: 'PROFESSIONAL',
+          personType: tipoPessoa?.toUpperCase(),
+          cpf: formData.cpf || null,
+          cnpj: formData.cnpj || null,
+          razaoSocial: formData.razaoSocial || null,
+          nomeFantasia: formData.nomeFantasia || null,
+          phone: formData.telefone,
+          whatsapp: formData.whatsapp || null,
+          cep: formData.cep,
+          address: formData.endereco,
+          number: formData.numero,
+          complement: formData.complemento || null,
+          neighborhood: formData.bairro,
+          city: formData.cidade,
+          state: formData.estado,
+          description: formData.descricao,
+          differentials: formData.diferenciais,
+          experience: formData.experiencia,
+          raioAtendimento: formData.raioAtendimento,
+          faixaPreco: formData.faixaPreco,
+          tiposEvento: formData.tiposEvento,
+          especialidades: formData.especialidades,
+          capacidade: formData.capacidade,
+          temGarcom: formData.temGarcom,
+          temSoftDrinks: formData.temSoftDrinks,
+          temBebidaAlcoolica: formData.temBebidaAlcoolica,
+          temDecoracao: formData.temDecoracao,
+          temLocacao: formData.temLocacao,
+          temSom: formData.temSom,
+          temFotografo: formData.temFotografo,
+          temBartender: formData.temBartender,
+          temDoces: formData.temDoces,
+          temBolo: formData.temBolo,
+          temPratosTalheres: formData.temPratosTalheres,
+          certificacoes: formData.certificacoes,
+          formasPagamento: formData.formasPagamento,
+          diasSemana: formData.diasSemana,
+        };
 
-        // Serviços e configurações
-        raioAtendimento: formData.raioAtendimento,
-        faixaPreco: formData.faixaPreco,
-        tiposEvento: formData.tiposEvento,
-        especialidades: formData.especialidades,
-        capacidade: formData.capacidade,
+        const token = localStorage.getItem('token');
         
-        // Serviços adicionais (booleanos)
-        temGarcom: formData.temGarcom,
-        temSoftDrinks: formData.temSoftDrinks,
-        temBebidaAlcoolica: formData.temBebidaAlcoolica,
-        temDecoracao: formData.temDecoracao,
-        temLocacao: formData.temLocacao,
-        temSom: formData.temSom,
-        temFotografo: formData.temFotografo,
-        temBartender: formData.temBartender,
-        temDoces: formData.temDoces,
-        temBolo: formData.temBolo,
-        temPratosTalheres: formData.temPratosTalheres,
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify(body),
+        });
+      } else {
+        // FLUXO Cadastro Normal: Usar /api/auth/register (não precisa de auth)
+        const url = '/api/auth/register';
         
-        // Certificações e disponibilidade
-        certificacoes: formData.certificacoes,
-        formasPagamento: formData.formasPagamento,
-        diasSemana: formData.diasSemana,
-      };
+        const body = {
+          email: formData.email,
+          password: formData.senha,
+          name: formData.nome || formData.razaoSocial,
+          phone: formData.telefone,
+          whatsapp: formData.whatsapp || null,
+          type: 'PROFESSIONAL',
+          personType: tipoPessoa?.toUpperCase() || 'PF',
+          cpf: formData.cpf || null,
+          cnpj: formData.cnpj || null,
+          razaoSocial: formData.razaoSocial || null,
+          nomeFantasia: formData.nomeFantasia || null,
+          cep: formData.cep,
+          address: formData.endereco,
+          number: formData.numero,
+          complement: formData.complemento || null,
+          neighborhood: formData.bairro,
+          city: formData.cidade,
+          state: formData.estado,
+        };
 
-      console.log('📝 Enviando POST para:', url);
-      console.log('📝 Body completo:', JSON.stringify(body, null, 2));
-
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify(body),
-      });
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      }
 
       console.log('📝 Response status:', response.status);
       
@@ -402,17 +421,93 @@ export default function CadastroProfissionalPage() {
 
       console.log('✅ Cadastro concluído com sucesso!');
       console.log('✅ User:', data.user);
-      console.log('✅ Profile:', data.profile);
       
       setSuccess(true);
+      
+      // Se for cadastro normal (não OAuth), fazer login automático
+      if (!isOAuth) {
+        console.log('🔄 Fazendo login automático...');
+        const loginResponse = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.senha,
+          }),
+        });
+
+        const loginData = await loginResponse.json();
+
+        if (loginResponse.ok) {
+          localStorage.setItem('token', loginData.token);
+          localStorage.setItem('user', JSON.stringify(loginData.user));
+          console.log('✅ Login automático realizado');
+          
+          // Agora atualizar o perfil profissional com dados extras
+          if (loginData.token) {
+            try {
+              await fetch('/api/auth/complete-profile-professional', {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${loginData.token}`,
+                },
+                body: JSON.stringify({
+                  email: formData.email,
+                  name: formData.nome || formData.razaoSocial,
+                  type: 'PROFESSIONAL',
+                  personType: tipoPessoa?.toUpperCase() || 'PF',
+                  cpf: formData.cpf || null,
+                  cnpj: formData.cnpj || null,
+                  razaoSocial: formData.razaoSocial || null,
+                  nomeFantasia: formData.nomeFantasia || null,
+                  phone: formData.telefone,
+                  whatsapp: formData.whatsapp || null,
+                  cep: formData.cep,
+                  address: formData.endereco,
+                  number: formData.numero,
+                  complement: formData.complemento || null,
+                  neighborhood: formData.bairro,
+                  city: formData.cidade,
+                  state: formData.estado,
+                  description: formData.descricao,
+                  differentials: formData.diferenciais,
+                  experience: formData.experiencia,
+                  raioAtendimento: formData.raioAtendimento,
+                  faixaPreco: formData.faixaPreco,
+                  tiposEvento: formData.tiposEvento,
+                  especialidades: formData.especialidades,
+                  capacidade: formData.capacidade,
+                  temGarcom: formData.temGarcom,
+                  temSoftDrinks: formData.temSoftDrinks,
+                  temBebidaAlcoolica: formData.temBebidaAlcoolica,
+                  temDecoracao: formData.temDecoracao,
+                  temLocacao: formData.temLocacao,
+                  temSom: formData.temSom,
+                  temFotografo: formData.temFotografo,
+                  temBartender: formData.temBartender,
+                  temDoces: formData.temDoces,
+                  temBolo: formData.temBolo,
+                  temPratosTalheres: formData.temPratosTalheres,
+                  certificacoes: formData.certificacoes,
+                  formasPagamento: formData.formasPagamento,
+                  diasSemana: formData.diasSemana,
+                }),
+              });
+              console.log('✅ Perfil profissional atualizado com dados extras');
+            } catch (profileError) {
+              console.log('⚠️ Erro ao atualizar perfil (não crítico):', profileError);
+            }
+          }
+        }
+      } else {
+        // Atualizar sessão para OAuth
+        await updateSession();
+      }
+      
       alert('✅ Cadastro concluído com sucesso! Redirecionando...');
       
-      // Atualizar sessão antes de redirecionar
-      console.log('🔄 Atualizando sessão...');
-      await updateSession();
-      
-      // Pequeno delay para mostrar mensagem de sucesso
-      console.log('🔄 Redirecionando para dashboard profissional em 1.5s...');
+      // Redirecionar
       setTimeout(() => {
         router.push('/dashboard/profissional');
         router.refresh();
