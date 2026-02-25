@@ -886,7 +886,7 @@ export default function DashboardProfissionalPage() {
                           }}
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
-                          Chat
+                          Contato
                         </Button>
                         <Button 
                           size="sm" 
@@ -1705,7 +1705,7 @@ export default function DashboardProfissionalPage() {
                   }}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Abrir Chat
+                  Entrar em Contato
                 </Button>
               </div>
             </div>
