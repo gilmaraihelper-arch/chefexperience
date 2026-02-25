@@ -56,6 +56,13 @@ export default function DashboardClientePage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelando, setCancelando] = useState(false);
   
+  // Estados para propostas
+  const [aceitandoProposta, setAceitandoProposta] = useState<string | null>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [propostaParaConversar, setPropostaParaConversar] = useState<any>(null);
+  const [mensagem, setMensagem] = useState('');
+  const [enviandoMensagem, setEnviandoMensagem] = useState(false);
+  
   const profissionaisFavoritos: any[] = [];
   const meusEventos: any[] = [];
 
@@ -252,6 +259,82 @@ export default function DashboardClientePage() {
       console.error('Erro ao cancelar evento:', err);
     } finally {
       setCancelando(false);
+    }
+  };
+
+  // Função para aceitar proposta
+  const handleAceitarProposta = async (propostaId: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      setAceitandoProposta(propostaId);
+      const res = await fetch(`/api/proposals/${propostaId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ action: 'accept' })
+      });
+      
+      if (res.ok) {
+        // Atualizar lista de propostas
+        setPropostasRecebidas(prev => prev.map(p => 
+          p.id === propostaId ? { ...p, status: 'ACCEPTED' } : p
+        ));
+        // Atualizar eventos também
+        const data = await res.json();
+        if (data.success) {
+          // Recarregar eventos para mostrar o profissional contratado
+          const eventosRes = await fetch('/api/events', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (eventosRes.ok) {
+            const eventosData = await eventosRes.json();
+            if (eventosData.events) {
+              setEventos(eventosData.events);
+            }
+          }
+        }
+      } else {
+        console.error('Erro ao aceitar proposta:', res.status);
+        const errorData = await res.json();
+        alert(errorData.error || 'Erro ao aceitar proposta');
+      }
+    } catch (err) {
+      console.error('Erro ao aceitar proposta:', err);
+      alert('Erro ao aceitar proposta. Tente novamente.');
+    } finally {
+      setAceitandoProposta(null);
+    }
+  };
+
+  // Função para abrir chat
+  const handleConversar = (proposta: any) => {
+    setPropostaParaConversar(proposta);
+    setShowChatModal(true);
+  };
+
+  // Função para enviar mensagem
+  const handleEnviarMensagem = async () => {
+    if (!mensagem.trim() || !propostaParaConversar) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      setEnviandoMensagem(true);
+      // Por enquanto, apenas simula o envio - quando tiver API real, substituir
+      await new Promise(resolve => setTimeout(resolve, 500));
+      alert(`Mensagem enviada para ${propostaParaConversar.professional?.user?.name}!\n\n"${mensagem}"`);
+      setMensagem('');
+      setShowChatModal(false);
+      setPropostaParaConversar(null);
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err);
+    } finally {
+      setEnviandoMensagem(false);
     }
   };
 
@@ -580,14 +663,45 @@ export default function DashboardClientePage() {
                             <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">{proposta.message}</p>
                           )}
                           <div className="flex gap-2 mt-4">
-                            <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600">
-                              <CheckCircle2 className="w-4 h-4 mr-1" />
-                              Aceitar Proposta
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              Conversar
-                            </Button>
+                            {proposta.status === 'ACCEPTED' ? (
+                              <Badge className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle2 className="w-4 h-4 mr-1" />
+                                Proposta Aceita
+                              </Badge>
+                            ) : proposta.status === 'REJECTED' ? (
+                              <Badge className="bg-red-100 text-red-700 border-red-200">
+                                Proposta Recusada
+                              </Badge>
+                            ) : (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  className="bg-gradient-to-r from-amber-500 to-orange-600"
+                                  onClick={() => handleAceitarProposta(proposta.id)}
+                                  disabled={aceitandoProposta === proposta.id}
+                                >
+                                  {aceitandoProposta === proposta.id ? (
+                                    <>
+                                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                                      Aceitando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                                      Aceitar Proposta
+                                    </>
+                                  )}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleConversar(proposta)}
+                                >
+                                  <MessageSquare className="w-4 h-4 mr-1" />
+                                  Conversar
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -714,6 +828,63 @@ export default function DashboardClientePage() {
                 disabled={cancelando}
               >
                 {cancelando ? 'Cancelando...' : 'Sim, cancelar evento'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Chat */}
+        <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-amber-600" />
+                Conversar com {propostaParaConversar?.professional?.user?.name || 'Chef'}
+              </DialogTitle>
+              <DialogDescription>
+                Envie uma mensagem sobre o evento <strong>{propostaParaConversar?.event?.name}</strong>
+                <br />
+                <span className="text-xs text-gray-400">
+                  Valor da proposta: R$ {(propostaParaConversar?.totalPrice || 0).toLocaleString('pt-BR')}
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <textarea
+                className="w-full h-32 p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="Escreva sua mensagem aqui..."
+                value={mensagem}
+                onChange={(e) => setMensagem(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="flex gap-2 sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowChatModal(false);
+                  setPropostaParaConversar(null);
+                  setMensagem('');
+                }}
+                disabled={enviandoMensagem}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleEnviarMensagem}
+                disabled={!mensagem.trim() || enviandoMensagem}
+                className="bg-gradient-to-r from-amber-500 to-orange-600"
+              >
+                {enviandoMensagem ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Enviar Mensagem
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
