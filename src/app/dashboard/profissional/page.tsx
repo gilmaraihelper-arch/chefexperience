@@ -395,7 +395,7 @@ export default function DashboardProfissionalPage() {
         setShowOrcamentoModal(false);
         
         // Mudar para aba de orçamentos enviados automaticamente
-        setAbaAtiva('orcamentos');
+        setAbaAtiva('enviados');
         
         // Atualizar lista de orçamentos enviados
         await fetchOrcamentosEnviados();
