@@ -450,7 +450,10 @@ export default function DashboardClientePage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0">
+          <Card 
+            className="bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setAbaAtiva('eventos')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -461,7 +464,10 @@ export default function DashboardClientePage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setAbaAtiva('propostas')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -474,7 +480,10 @@ export default function DashboardClientePage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setAbaAtiva('favoritos')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -485,7 +494,10 @@ export default function DashboardClientePage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setAbaAtiva('contratados')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -498,7 +510,10 @@ export default function DashboardClientePage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+          <Card 
+            className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/avaliar')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
