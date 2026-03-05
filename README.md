@@ -58,8 +58,13 @@ Senha: chef123
 
 - **Status:** ✅ 100% Concluído (2026-02-22)
 - **Produção:** https://chefexperience.vercel.app
-- **Último deploy:** 25/02/2026 (00:23) - Carrega propostas enviadas na inicialização
-- **Últimos fixes (25/02):** Carrega propostas enviadas na inicialização da página; Corrige filtro de eventos ao enviar proposta e adiciona contador em 'enviados'; Filtra eventos já propostos e corrige contador dinâmico
+- **Último deploy:** 25/02/2026 (19:28) - 5 novos fixes na interface
+- **Últimos fixes (25/02):**
+  - Adicionar botão Ver Detalhes na aba Contratados
+  - Usar eventos em vez de meusEventos na aba Contratados
+  - Adicionar botão Conversar na aba Contratados
+  - Cards de stats clicáveis no dashboard do cliente
+  - Botões de aceitar proposta e conversar no dashboard do cliente
 
 ## 📋 QA Report (2026-02-22)
 
@@ -116,10 +121,14 @@ git add . && git commit -m "update" && git push
 
 - [ ] Corrigir limite de deploys Vercel
 - [ ] Testar fluxo completo de pagamento
-- [ ] Testar integração de chat
 - [ ] Dashboard Admin - conexões reais (não simulado)
+- [ ] Definir roadmap v2 (novas funcionalidades)
+- [ ] Analisar métricas de uso (conversão, retenção)
+
+### ⚠️ REGRA ESPECIAL
+**Nenhum deploy sem autorização do Gilmar**
 
 ---
 
-*Última atualização: 2026-02-25*
+*Última atualização: 2026-03-05*
 *QA Engineer: Carol*
