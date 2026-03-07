@@ -130,5 +130,12 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-03-05*
+## 📋 Documentos Legais
+
+- **Termos de Uso:** `/termos` - https://chefexperience.vercel.app/termos
+- **Política de Privacidade (LGPD):** `/privacidade` - https://chefexperience.vercel.app/privacidade
+
+---
+
+*Última atualização: 2026-03-07*
 *QA Engineer: Carol*
