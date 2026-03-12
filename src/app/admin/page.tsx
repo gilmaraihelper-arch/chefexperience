@@ -96,6 +96,48 @@ interface AdminDashboardStatsResponse {
   };
 }
 
+interface Event {
+  id: string;
+  name: string;
+  client: string;
+  date: string;
+  status: 'OPEN' | 'HIRED' | 'COMPLETED' | 'CANCELLED';
+  proposals: number;
+  value: number | null;
+}
+
+interface Professional {
+  id: string;
+  name: string;
+  email: string;
+  type: string;
+  status: 'active' | 'inactive' | 'pending' | 'blocked';
+  createdAt: string;
+  specialty?: string;
+  rating?: number;
+  plan?: string;
+  avatar?: string;
+}
+
+interface AuditLog {
+  id: string | number;
+  action: string;
+  user: string;
+  target: string;
+  details: string;
+  date: string;
+}
+
+interface FlaggedContentItem {
+  id: string | number;
+  type: 'REVIEW' | 'PHOTO' | 'MESSAGE';
+  content: string;
+  user: string;
+  target: string;
+  date: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
 // =============================
 // Mock data (para seções sem API)
 // =============================
@@ -121,14 +163,6 @@ const planDistribution = [
   { plan: 'Profissional', users: 650, percentage: 23 },
   { plan: 'Premium', users: 320, percentage: 11 },
   { plan: 'Empresa', users: 77, percentage: 3 },
-];
-
-const mockEvents = [
-  { id: 1, name: 'Casamento Ana e Pedro', client: 'Ana Carolina', date: '2026-03-15', status: 'OPEN', proposals: 5, value: null as number | null },
-  { id: 2, name: 'Aniversário 40 anos', client: 'Fernanda Lima', date: '2026-02-20', status: 'HIRED', proposals: 3, value: 8_500 },
-  { id: 3, name: 'Confraternização XYZ', client: 'Carlos Eduardo', date: '2026-02-10', status: 'COMPLETED', proposals: 8, value: 12_000 },
-  { id: 4, name: 'Formatura Medicina', client: 'João Paulo', date: '2026-03-20', status: 'OPEN', proposals: 2, value: null as number | null },
-  { id: 5, name: 'Festa Infantil', client: 'Pedro Santos', date: '2026-02-05', status: 'CANCELLED', proposals: 1, value: null as number | null },
 ];
 
 const subscriptionPlans = [
@@ -284,71 +318,6 @@ const coupons = [
   },
 ];
 
-const flaggedContent = [
-  {
-    id: 1,
-    type: 'REVIEW',
-    content: 'Avaliação suspeita - muito genérica',
-    user: 'Cliente Anônimo',
-    target: 'Chef Ricardo',
-    date: '2026-02-19',
-    priority: 'low',
-  },
-  {
-    id: 2,
-    type: 'PHOTO',
-    content: 'Foto inapropriada no portfólio',
-    user: 'Buffet XYZ',
-    target: 'Próprio',
-    date: '2026-02-18',
-    priority: 'high',
-  },
-  {
-    id: 3,
-    type: 'MESSAGE',
-    content: 'Spam em mensagens',
-    user: 'Profissional A',
-    target: 'Vários clientes',
-    date: '2026-02-17',
-    priority: 'medium',
-  },
-];
-
-const auditLogs = [
-  {
-    id: 1,
-    action: 'USER_CREATED',
-    user: 'Admin Principal',
-    target: 'Ana Carolina',
-    details: 'Cliente registrado',
-    date: '2026-02-19 14:30:22',
-  },
-  {
-    id: 2,
-    action: 'PROPOSAL_ACCEPTED',
-    user: 'Sistema',
-    target: 'Evento #1234',
-    details: 'Proposta aceita automaticamente',
-    date: '2026-02-19 13:15:00',
-  },
-  {
-    id: 3,
-    action: 'USER_BLOCKED',
-    user: 'Admin Principal',
-    target: 'Usuário Suspeito',
-    details: 'Violação de termos',
-    date: '2026-02-19 11:45:33',
-  },
-  {
-    id: 4,
-    action: 'PLAN_UPGRADE',
-    user: 'Sistema',
-    target: 'Chef Maria',
-    details: 'Upgrade para Premium',
-    date: '2026-02-19 10:20:15',
-  },
-];
-
 // =============================
 // Helper components
 // =============================
@@ -433,14 +402,20 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [flaggedContent, setFlaggedContent] = useState<FlaggedContentItem[]>([]);
   const [kpis, setKpis] = useState<KPIData>(fallbackKPI);
 
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [selectedCoupon, setSelectedCoupon] = useState<any | null>(null);
 
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showProfessionalModal, setShowProfessionalModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showCouponModal, setShowCouponModal] = useState(false);
@@ -452,6 +427,8 @@ export default function AdminDashboardPage() {
   const [userTypeFilter, setUserTypeFilter] = useState('all');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [eventsStatusFilter, setEventsStatusFilter] = useState('all');
+  const [professionalStatusFilter, setProfessionalStatusFilter] = useState('all');
+  const [professionalSpecialtyFilter, setProfessionalSpecialtyFilter] = useState('all');
 
   const [selectedCouponsIds, setSelectedCouponsIds] = useState<string[]>([]);
 
@@ -480,10 +457,10 @@ export default function AdminDashboardPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Pegar token do localStorage ou gerar um novo baseado na sessão
       let token = localStorage.getItem('token');
-      
+
       // Se não tem token no localStorage mas tem sessão NextAuth, buscar token
       if (!token && session?.user?.email) {
         try {
@@ -503,7 +480,7 @@ export default function AdminDashboardPage() {
           console.log('Erro ao gerar token:', e);
         }
       }
-      
+
       const headers: HeadersInit = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -529,6 +506,77 @@ export default function AdminDashboardPage() {
             .toUpperCase(),
         }));
         setUsers(mappedUsers);
+      }
+
+      // PROFESSIONALS
+      const professionalsRes = await fetch('/api/admin/professionals', { headers });
+      if (professionalsRes.ok) {
+        const data = await professionalsRes.json();
+        const mappedProfessionals: Professional[] = data.professionals?.map((p: any) => ({
+          id: p.id,
+          name: p.name || 'Sem nome',
+          email: p.email || '',
+          type: 'PROFESSIONAL',
+          status: p.isActive === false ? 'inactive' : 'active',
+          createdAt: p.createdAt,
+          specialty: p.specialties?.[0] || p.specialty || 'Geral',
+          rating: p.rating || 0,
+          plan: p.subscriptionPlan || 'FREE',
+          avatar: (p.name || 'P')
+            .split(' ')
+            .map((n: string) => n[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase(),
+        })) || [];
+        setProfessionals(mappedProfessionals);
+      }
+
+      // EVENTS
+      const eventsRes = await fetch('/api/admin/events', { headers });
+      if (eventsRes.ok) {
+        const data = await eventsRes.json();
+        const mappedEvents: Event[] = data.events?.map((e: any) => ({
+          id: e.id,
+          name: e.name || 'Evento sem nome',
+          client: e.client?.name || 'Cliente não identificado',
+          date: e.date || e.createdAt,
+          status: e.status || 'OPEN',
+          proposals: e.proposalsCount || 0,
+          value: e.hiredValue || e.maxBudget || null,
+        })) || [];
+        setEvents(mappedEvents);
+      }
+
+      // AUDIT LOGS
+      const auditRes = await fetch('/api/admin/audit-logs', { headers });
+      if (auditRes.ok) {
+        const data = await auditRes.json();
+        const mappedLogs: AuditLog[] = data.logs?.map((l: any) => ({
+          id: l.id,
+          action: l.action || 'UNKNOWN',
+          user: l.user || 'Sistema',
+          target: l.target || '-',
+          details: l.details || '-',
+          date: l.timestamp || l.date || new Date().toISOString(),
+        })) || [];
+        setAuditLogs(mappedLogs);
+      }
+
+      // MODERATION / FLAGGED CONTENT
+      const moderationRes = await fetch('/api/admin/moderation', { headers });
+      if (moderationRes.ok) {
+        const data = await moderationRes.json();
+        const mappedFlagged: FlaggedContentItem[] = data.items?.map((i: any) => ({
+          id: i.id,
+          type: i.type?.includes('REVIEW') ? 'REVIEW' : (i.type || 'REVIEW'),
+          content: i.content || 'Conteúdo sinalizado',
+          user: i.user || 'Anônimo',
+          target: i.target || 'Desconhecido',
+          date: i.date || i.createdAt || new Date().toISOString(),
+          priority: i.priority || 'low',
+        })) || [];
+        setFlaggedContent(mappedFlagged);
       }
 
       // DASHBOARD
@@ -722,9 +770,19 @@ export default function AdminDashboardPage() {
     return true;
   });
 
-  const filteredEvents = mockEvents.filter((e) => {
+  const filteredEvents = events.filter((e) => {
     if (eventsStatusFilter === 'all') return true;
     return e.status === eventsStatusFilter;
+  });
+
+  const filteredProfessionals = professionals.filter((p) => {
+    if (professionalStatusFilter !== 'all' && p.status !== professionalStatusFilter) return false;
+    if (professionalSpecialtyFilter !== 'all') {
+      if (professionalSpecialtyFilter === 'chef' && !p.specialty?.toLowerCase().includes('chef')) return false;
+      if (professionalSpecialtyFilter === 'buffet' && !p.specialty?.toLowerCase().includes('buffet')) return false;
+      if (professionalSpecialtyFilter === 'decorator' && !p.specialty?.toLowerCase().includes('decor')) return false;
+    }
+    return true;
   });
 
   const menuItems = [
@@ -1032,7 +1090,7 @@ export default function AdminDashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {mockEvents.slice(0, 5).map((event) => (
+                      {events.slice(0, 5).map((event) => (
                         <div
                           key={event.id}
                           className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
@@ -1058,6 +1116,9 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
                       ))}
+                      {events.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">Nenhum evento encontrado</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1276,14 +1337,134 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* PROFESSIONALS TAB (placeholder visual) */}
+          {/* PROFESSIONALS TAB */}
           {activeTab === 'professionals' && (
-            <div className="text-center py-20">
-              <ChefHat className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">
-                Gerenciamento de profissionais em desenvolvimento (usa mesma base de
-                usuários)
-              </p>
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input placeholder="Buscar profissionais..." className="pl-10" />
+                  </div>
+                  <Select
+                    defaultValue="all"
+                    onValueChange={(v) => setProfessionalStatusFilter(v)}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="active">Ativos</SelectItem>
+                      <SelectItem value="inactive">Inativos</SelectItem>
+                      <SelectItem value="pending">Pendentes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    defaultValue="all"
+                    onValueChange={(v) => setProfessionalSpecialtyFilter(v)}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Especialidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="chef">Chef</SelectItem>
+                      <SelectItem value="buffet">Buffet</SelectItem>
+                      <SelectItem value="decorator">Decorador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar
+                  </Button>
+                  <Button className="bg-gradient-to-r from-amber-500 to-orange-600">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Novo Profissional
+                  </Button>
+                </div>
+              </div>
+
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Profissional</TableHead>
+                        <TableHead>Especialidade</TableHead>
+                        <TableHead>Avaliação</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProfessionals.map((professional) => (
+                        <TableRow key={professional.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
+                                {professional.avatar}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{professional.name}</p>
+                                <p className="text-sm text-gray-500">{professional.email}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{professional.specialty || 'Geral'}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                              <span className="font-medium">{professional.rating?.toFixed(1) || '0.0'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={
+                              professional.plan === 'PREMIUM' ? 'bg-purple-100 text-purple-700' :
+                              professional.plan === 'PROFESSIONAL' ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-600'
+                            }>
+                              {professional.plan || 'FREE'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={professional.status} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedProfessional(professional);
+                                  setShowProfessionalModal(true);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filteredProfessionals.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                            Nenhum profissional encontrado
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
           )}
 
@@ -2016,6 +2197,87 @@ export default function AdminDashboardPage() {
                   <p className="text-sm text-gray-500">Propostas</p>
                   <p className="font-medium">{selectedEvent.proposals}</p>
                 </div>
+                {selectedEvent.value && (
+                  <div className="p-3 bg-gray-50 rounded-lg col-span-2">
+                    <p className="text-sm text-gray-500">Valor</p>
+                    <p className="font-medium text-amber-600">
+                      R$ {selectedEvent.value.toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Professional Modal */}
+      <Dialog open={showProfessionalModal} onOpenChange={setShowProfessionalModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Profissional</DialogTitle>
+          </DialogHeader>
+          {selectedProfessional && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xl">
+                  {selectedProfessional.avatar}
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">{selectedProfessional.name}</h3>
+                  <p className="text-gray-500">{selectedProfessional.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Especialidade</p>
+                  <p className="font-medium">{selectedProfessional.specialty || 'Geral'}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Status</p>
+                  <p className="font-medium">
+                    <StatusBadge status={selectedProfessional.status} />
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Avaliação</p>
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <span className="font-medium">{selectedProfessional.rating?.toFixed(1) || '0.0'}</span>
+                  </div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Plano</p>
+                  <Badge className={
+                    selectedProfessional.plan === 'PREMIUM' ? 'bg-purple-100 text-purple-700' :
+                    selectedProfessional.plan === 'PROFESSIONAL' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-600'
+                  }>
+                    {selectedProfessional.plan || 'FREE'}
+                  </Badge>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Cadastro</p>
+                  <p className="font-medium">
+                    {new Date(selectedProfessional.createdAt).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Tipo</p>
+                  <p className="font-medium">{selectedProfessional.type}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button variant="outline" className="flex-1">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar
+                </Button>
+                <Button variant="destructive" className="flex-1">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Remover
+                </Button>
               </div>
             </div>
           )}

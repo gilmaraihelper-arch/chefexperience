@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CepInput } from '@/components/ui/cep-input';
 
 export default function CadastroClientePage() {
   const router = useRouter();
@@ -317,19 +318,20 @@ export default function CadastroClientePage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              <div>
-                <Label htmlFor="cep">CEP *</Label>
-                <div className="relative mt-1">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    id="cep"
-                    value={formData.cep}
-                    onChange={(e) => updateForm('cep', e.target.value)}
-                    placeholder="00000-000"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+              <CepInput
+                value={formData.cep}
+                onChange={(cep) => updateForm('cep', cep)}
+                onAddressFound={(address) => {
+                  updateForm('endereco', address.logradouro);
+                  updateForm('bairro', address.bairro);
+                  updateForm('cidade', address.cidade);
+                  updateForm('estado', address.estado);
+                  if (address.complemento) {
+                    updateForm('complemento', address.complemento);
+                  }
+                }}
+                required
+              />
 
               <div className="md:col-span-2">
                 <Label htmlFor="endereco">Endereço *</Label>

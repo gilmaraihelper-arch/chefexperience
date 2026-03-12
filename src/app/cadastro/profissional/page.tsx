@@ -38,6 +38,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CepInput } from '@/components/ui/cep-input';
 
 const tiposEvento = [
   { id: 'casamento', label: 'Casamento', icon: '💒' },
@@ -794,16 +795,20 @@ export default function CadastroProfissionalPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              <div>
-                <Label htmlFor="cep">CEP *</Label>
-                <Input
-                  id="cep"
-                  value={formData.cep}
-                  onChange={(e) => updateForm('cep', e.target.value)}
-                  placeholder="00000-000"
-                  className="mt-1"
-                />
-              </div>
+              <CepInput
+                value={formData.cep}
+                onChange={(cep) => updateForm('cep', cep)}
+                onAddressFound={(address) => {
+                  updateForm('endereco', address.logradouro);
+                  updateForm('bairro', address.bairro);
+                  updateForm('cidade', address.cidade);
+                  updateForm('estado', address.estado);
+                  if (address.complemento) {
+                    updateForm('complemento', address.complemento);
+                  }
+                }}
+                required
+              />
               <div className="md:col-span-2">
                 <Label htmlFor="endereco">Endereço *</Label>
                 <Input

@@ -137,5 +137,5 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-03-07*
+*Última atualização: 2026-03-12*
 *QA Engineer: Carol*
