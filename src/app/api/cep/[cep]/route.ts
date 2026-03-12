@@ -7,10 +7,10 @@ import { consultarCep, buscarCoordenadasPorCep } from '@/lib/geolocation';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { cep: string } }
+  { params }: { params: Promise<{ cep: string }> }
 ) {
   try {
-    const { cep } = params;
+    const { cep } = await params;
 
     if (!cep) {
       return NextResponse.json(
