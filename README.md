@@ -66,7 +66,11 @@ Senha: chef123
   - Cards de stats clicáveis no dashboard do cliente
   - Botões de aceitar proposta e conversar no dashboard do cliente
 
-## 📋 QA Report (2026-02-22)
+## 📋 QA Report (2026-03-15)
+
+### Bugs Corrigidos (14/03)
+- ✅ Correção de tipos na API de CEP para Next.js 16
+- ✅ Integração de geolocalização e consulta de CEP
 
 ### Bugs Corrigidos (22/02)
 - ✅ Admin panel - promoção user para ADMIN via API
@@ -137,5 +141,5 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-03-12*
+*Última atualização: 2026-03-19*
 *QA Engineer: Carol*
