@@ -129,6 +129,12 @@ git add . && git commit -m "update" && git push
 - [ ] Definir roadmap v2 (novas funcionalidades)
 - [ ] Analisar métricas de uso (conversão, retenção)
 
+### 🆕 Liliana Voice Server (2026-03-15)
+- **URL:** http://localhost:3003
+- **Stack:** Node.js + WebSocket, ElevenLabs Conversational AI
+- **Status:** ✅ Implementado
+- **Features:** Streaming em tempo real, Brazilian voice (Fabi)
+
 ### ⚠️ REGRA ESPECIAL
 **Nenhum deploy sem autorização do Gilmar**
 
@@ -141,5 +147,5 @@ git add . && git commit -m "update" && git push
 
 ---
 
-*Última atualização: 2026-03-19*
-*QA Engineer: Carol*
+*Última atualização: 2026-05-06*
+*QA Engineer: Carol (Revisão docs)*
