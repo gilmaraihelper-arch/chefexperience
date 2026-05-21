@@ -145,7 +145,22 @@ git add . && git commit -m "update" && git push
 - **Termos de Uso:** `/termos` - https://chefexperience.vercel.app/termos
 - **Política de Privacidade (LGPD):** `/privacidade` - https://chefexperience.vercel.app/privacidade
 
+## 📅 Cronjob - Lembretes de Eventos
+
+Sistema automatizado que verifica eventos do dia seguinte e envia emails de lembrete para clientes e profissionais.
+
+**Funcionamento:**
+- Executa diariamente às 08:00 AM
+- Verifica eventos agendados para o dia seguinte
+- Envia email de lembrete automático para cliente e profissional
+
+**Status:** ✅ Funcionando (desde março/2026)
+
+**Logs:** `chefexperience/logs/event-reminders-YYYY-MM-DD.md`
+
+**Template de Email:** `emailTemplates.eventReminder`
+
 ---
 
-*Última atualização: 2026-05-17*
-*QA Engineer: Carol (Revisão docs - 17/05/2026)*
+*Última atualização: 2026-05-21*
+*QA Engineer: Carol (Revisão docs - 21/05/2026)*
