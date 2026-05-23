@@ -162,5 +162,5 @@ Sistema automatizado que verifica eventos do dia seguinte e envia emails de lemb
 
 ---
 
-*Última atualização: 2026-05-21*
-*QA Engineer: Carol (Revisão docs - 21/05/2026)*
+*Última atualização: 2026-05-23*
+*QA Engineer: Carol (Revisão docs - 23/05/2026)*
