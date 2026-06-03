@@ -158,9 +158,23 @@ Sistema automatizado que verifica eventos do dia seguinte e envia emails de lemb
 
 **Logs:** `chefexperience/logs/event-reminders-YYYY-MM-DD.md`
 
+**Log mais recente (2026-06-03):**
+- ✅ Cron executado com sucesso
+- Data verificada: 2026-06-04 (amanhã)
+- Eventos encontrados: 0
+- Emails enviados: 0
+- Próxima execução: 2026-06-04 08:00 AM
+
+**Log anterior (2026-06-02):**
+- ✅ Cron executado com sucesso
+- Data verificada: 2026-05-31 (amanhã)
+- Eventos encontrados: 0
+- Emails enviados: 0
+- Próxima execução: 2026-05-31 08:00 AM
+
 **Template de Email:** `emailTemplates.eventReminder`
 
 ---
 
-*Última atualização: 2026-05-25*
-*QA Engineer: Carol (Revisão docs - 25/05/2026)*
+*Última atualização: 2026-06-03*
+*QA Engineer: Carol (Revisão docs - 03/06/2026)*
