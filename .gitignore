@@ -42,3 +42,23 @@ next-env.d.ts
 
 /src/generated/prisma
 .env
+
+# logs
+logs/
+*.log
+
+# database
+dev.db
+*.db
+*.sqlite
+*.sqlite3
+
+# logs
+logs/
+*.log
+
+# database
+dev.db
+*.db
+*.sqlite
+*.sqlite3
